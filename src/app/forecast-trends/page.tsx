@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/src/components/ui/Button';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
-import { Badge } from '../../components/ui/badge';
+import { Badge } from '@/src/components/ui/badge';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
 

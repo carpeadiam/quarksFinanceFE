@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
 import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/badge';
+import { Badge } from '@/src/components/ui/badge';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 
 
