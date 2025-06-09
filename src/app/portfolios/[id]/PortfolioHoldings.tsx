@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Holding, HoldingWithSymbol } from "@/src/lib/portfolio";
+import { Holding, HoldingWithSymbol } from "./portfolio";
 
 interface PortfolioHoldingsProps {
   portfolioId: string;
