@@ -9,7 +9,7 @@ import PortfolioHeader from "./PortfolioHeader";
 import PortfolioHoldings from "./PortfolioHoldings";
 import TransactionForm from "./TransactionForm";
 import TransactionHistory from "./TransactionHistory";
-import { Portfolio, Holding, Transaction } from "@/src/lib/portfolio";
+import { Portfolio, Holding, Transaction } from "./portfolio";
 
 const PortfolioDetailPage: React.FC = () => {
   const router = useRouter();
