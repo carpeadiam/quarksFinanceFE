@@ -13,11 +13,10 @@ export default function SectorAnalysisPage() {
   const [sectorData, setSectorData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [activePeriod, setActivePeriod] = useState('1_day');
+  const [activePeriod, setActivePeriod] = useState('3_days');
   const router = useRouter();
 
   const periods = {
-    '1_day': '1 Day',
     '3_days': '3 Days',
     '7_days': '7 Days',
     '1_month': '1 Month',
