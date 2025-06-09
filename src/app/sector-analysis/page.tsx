@@ -122,7 +122,7 @@ export default function SectorAnalysisPage() {
                 className={`px-4 py-2 text-sm font-medium ${activePeriod === key 
                   ? 'bg-[#FCF80A] text-gray-800' 
                   : 'bg-white text-gray-700 hover:bg-gray-50'} 
-                  ${key === '1_day' ? 'rounded-l-md' : ''} 
+                  ${key === '3_days' ? 'rounded-l-md' : ''} 
                   ${key === '6_months' ? 'rounded-r-md' : ''}
                   border border-gray-200`}
               >
