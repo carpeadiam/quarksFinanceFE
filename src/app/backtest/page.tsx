@@ -158,14 +158,14 @@ export default function BacktestPage() {
     }
   };
 
-  // Initialize params when component mounts
-  useState(() => {
-    const initialParams: {[key: string]: number} = {};
-    strategyParameters[formData.strategy_type as keyof StrategyParams]?.forEach(param => {
-      initialParams[param.name] = param.defaultValue;
-    });
-    setParams(initialParams);
-  }, []);
+// Initialize params when component mounts
+useEffect(() => {
+  const initialParams: {[key: string]: number} = {};
+  strategyParameters[formData.strategy_type as keyof StrategyParams]?.forEach(param => {
+    initialParams[param.name] = param.defaultValue;
+  });
+  setParams(initialParams);
+}, [formData.strategy_type]);
 
   return (
     <main className="min-h-screen bg-white">
