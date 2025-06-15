@@ -35,46 +35,43 @@ const WatchlistDetailPage: React.FC = () => {
   const [newSymbol, setNewSymbol] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
-  
-  // First useEffect to handle params and set watchlistId
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     if (watchlistIdFromParams) {
       setWatchlistId(parseInt(watchlistIdFromParams));
     }
   }, [watchlistIdFromParams]);
   
-  // Second useEffect to check login and fetch data when watchlistId is available
   useEffect(() => {
     const storedToken = localStorage.getItem('quarksFinanceToken');
-    console.log(storedToken);
-    
     if (storedToken && watchlistId !== null) {
       setToken(storedToken);
       setIsLoggedIn(true);
       fetchSingleWatchlist(watchlistId, storedToken);
     } else if (!storedToken) {
-      // Redirect to main page if not logged in
       router.push('/watchlist');
     }
   }, [watchlistId, router]);
   
-  // Auto-refresh useEffect that fetches data every 5 seconds
   useEffect(() => {
-    // Only set up the interval if we have a valid watchlistId and token
     if (watchlistId !== null && token) {
-      // Initial fetch
       fetchSingleWatchlist(watchlistId, token);
-      
-      // Set up interval to fetch every 5 seconds
       const intervalId = setInterval(() => {
         fetchSingleWatchlist(watchlistId, token);
       }, 5000);
-      
-      // Clean up the interval when component unmounts
       return () => clearInterval(intervalId);
     }
   }, [watchlistId, token]);
-  
+
+  useEffect(() => {
+    if (watchlist) {
+      setNewName(watchlist.name);
+    }
+  }, [watchlist]);
+
   const showMessage = (message: string, isError: boolean = false) => {
     if (isError) {
       setErrorMessage(message);
@@ -83,8 +80,6 @@ const WatchlistDetailPage: React.FC = () => {
       setSuccessMessage(message);
       setErrorMessage('');
     }
-    
-    // Clear messages after 3 seconds
     setTimeout(() => {
       setErrorMessage('');
       setSuccessMessage('');
@@ -93,7 +88,6 @@ const WatchlistDetailPage: React.FC = () => {
   
   const fetchSingleWatchlist = async (watchlistId: number, authToken: string) => {
     try {
-      // Fetch the watchlist details
       const response = await fetch(`${baseURL}/watchlists/${watchlistId}`, {
         method: 'GET',
         headers: {
@@ -104,7 +98,6 @@ const WatchlistDetailPage: React.FC = () => {
       const data = await response.json();
       
       if (data.id) {
-        // Successfully fetched watchlist details
         setWatchlist(data);
       } else {
         showMessage('Failed to load watchlist details', true);
@@ -140,8 +133,6 @@ const WatchlistDetailPage: React.FC = () => {
       if (data.id) {
         showMessage(`Added ${symbol} to watchlist`);
         setNewSymbol('');
-        
-        // Refresh the watchlist data immediately after successful addition
         fetchSingleWatchlist(watchlistId, token);
       } else {
         showMessage(data.message || 'Failed to add symbol', true);
@@ -169,8 +160,6 @@ const WatchlistDetailPage: React.FC = () => {
       
       if (data.id) {
         showMessage(`Removed ${symbol} from watchlist`);
-        
-        // Refresh the watchlist data immediately after successful removal
         fetchSingleWatchlist(watchlistId, token);
       } else {
         showMessage(data.message || 'Failed to remove symbol', true);
@@ -180,7 +169,39 @@ const WatchlistDetailPage: React.FC = () => {
       console.error(err);
     }
   };
-  
+
+  const handleUpdateName = async () => {
+    if (!newName.trim() || !watchlistId) return;
+    
+    try {
+      setIsSaving(true);
+      const response = await fetch(`${baseURL}/watchlists/${watchlistId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          'x-access-token': token,
+        },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update watchlist name");
+      }
+
+      setIsEditing(false);
+      showMessage("Watchlist name updated successfully");
+      setWatchlist(prev => prev ? { ...prev, name: newName } : null);
+      fetchSingleWatchlist(watchlistId, token);
+    } catch (error: any) {
+      console.error("Error updating watchlist:", error);
+      showMessage(error.message || "Failed to update watchlist name", true);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newSymbol.trim()) {
       addSymbolToWatchlist(newSymbol);
@@ -188,25 +209,24 @@ const WatchlistDetailPage: React.FC = () => {
   };
   
   if (!isLoggedIn || watchlistId === null) {
-    return null; // Will redirect in useEffect
+    return null;
   }
   
   return (
     <div className="min-h-screen bg-white text-gray-800">
       <Navbar />
       
-      {/* Breadcrumb navigation */}
       <nav className="px-8 py-3 flex items-center gap-4 text-sm mb-10">
         <Link href="/home" className="text-black text-2xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>Home</Link>
         <span className="text-black text-2xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>&gt;</span>
         <Link href="/watchlist" className="text-black text-2xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>Watchlists</Link>
         <span className="text-black text-2xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>&gt;</span>
-        <span className="text-black text-2xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>{watchlist?.name || 'Loading...'}</span>
+        <span className="text-black text-2xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>
+          {watchlist?.name || 'Loading...'}
+        </span>
       </nav>
       
-      {/* Main content */}
       <main className="max-w-5xl mx-auto px-4 py-4">
-        {/* Search and add section */}
         <div className="max-w-4xl mx-auto mb-20">
           <div className="border rounded-lg overflow-hidden bg-white border border-gray-200">
             <div className="flex items-center px-2 py-2">
@@ -233,19 +253,56 @@ const WatchlistDetailPage: React.FC = () => {
         </div>
         {watchlist ? (
           <div>
-            {/* Watchlist header with refresh button */}
             <div className="bg-[#41748D] text-white p-4 rounded-t-lg flex justify-between items-center">
-              <h2 className="text-xl font-medium">{watchlist.name}</h2>
-              <button 
-                onClick={() => watchlistId && fetchSingleWatchlist(watchlistId, token)}
-                className="text-white hover:text-gray-200"
-                aria-label="Refresh watchlist"
-              >
-                ⟳
-              </button>
+              {isEditing ? (
+                <div className="flex items-center space-x-2 flex-grow">
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="border border-white/20 rounded-lg px-3 py-2 bg-white/10 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/30"
+                    style={{ fontFamily: 'Rubik, sans-serif' }}
+                  />
+                  <button
+                    onClick={handleUpdateName}
+                    className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-xl font-medium">{watchlist.name}</h2>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="text-white hover:text-gray-200"
+                      aria-label="Edit watchlist name"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+
+                    </button>
+                    <button 
+                      onClick={() => watchlistId && fetchSingleWatchlist(watchlistId, token)}
+                      className="text-white hover:text-gray-200"
+                      aria-label="Refresh watchlist"
+                    >
+                      ⟳
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
             
-            {/* Watchlist table with borders */}
             <div className="border border-t-0 rounded-b-lg overflow-hidden mb-8">
               <table className="w-full border-collapse">
                 <thead>
@@ -269,14 +326,14 @@ const WatchlistDetailPage: React.FC = () => {
                           {item.Change > 0 ? `+${item.Change.toFixed(2)}` : item.Change.toFixed(2)}
                         </td>
                         <td>
-                        <button 
-                          onClick={() => removeSymbolFromWatchlist(item.Symbol)}
-                          className="ml-2 text-gray-500 hover:text-red-500"
-                          style={{ fontFamily: 'Rubik, sans-serif' }}
-                          aria-label="Remove symbol"
-                        >
-                          ✕
-                        </button>
+                          <button 
+                            onClick={() => removeSymbolFromWatchlist(item.Symbol)}
+                            className="ml-2 text-gray-500 hover:text-red-500"
+                            style={{ fontFamily: 'Rubik, sans-serif' }}
+                            aria-label="Remove symbol"
+                          >
+                            ✕
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -298,7 +355,6 @@ const WatchlistDetailPage: React.FC = () => {
         )}
       </main>
       
-      {/* Notifications */}
       {errorMessage && (
         <div className="fixed bottom-4 right-4 bg-[#41748D] text-white p-3 rounded shadow-md">
           {errorMessage}
