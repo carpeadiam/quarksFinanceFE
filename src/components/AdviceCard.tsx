@@ -60,6 +60,7 @@ type AdviceData = {
       recommendation: string;
       reason: string;
       signal: string;
+      crossover_type: 'none' | 'bullish' | 'bearish';
       moving_averages: {
         sma200: number;
         sma50: number;
@@ -1020,8 +1021,9 @@ const strategyComparisonData = {
                 <div>
                   <div className="text-sm text-gray-700">Crossover Type</div>
                   <div className="text-xl font-semibold text-black">
-                    {advice.recommendations.ma_crossover.crossover_type === 'none' ? 'No Crossover' : 
-                     advice.recommendations.ma_crossover.crossover_type === 'bullish' ? 'Bullish Crossover' : 'Bearish Crossover'}
+                    {advice.recommendations?.ma_crossover?.crossover_type === 'none' ? 'No Crossover' : 
+ advice.recommendations?.ma_crossover?.crossover_type === 'bullish' ? 'Bullish Crossover' : 
+ 'Bearish Crossover'}
                   </div>
                 </div>
               </div>
