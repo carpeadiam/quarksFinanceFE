@@ -389,12 +389,13 @@ console.log("Creating strategy with:", {
       
       // Reset form and close
       setNewStrategy({
-        portfolio_id: '',
-        name: '',
-        symbol: '',
-        strategy_type: 'BOLLINGER'
-      });
-      setShowCreateForm(false);
+  portfolio_id: '',
+  name: '',
+  symbol: '',
+  strategy_type: 'BOLLINGER',
+  parameters: {} // Initialize as empty object
+});
+setShowCreateForm(false);
       
       // Refresh strategies
       fetchStrategies(token);
