@@ -1018,19 +1018,7 @@ const strategyComparisonData = {
                     {advice.recommendations.ma_crossover.recommendation}
                   </div>
                 </div>
-                <div>
-                  <div className="text-sm text-gray-700">Crossover Type</div>
-                  <div className="text-xl font-semibold text-black">
-                   // In your AdviceCard component
-{advice.recommendations.ma_crossover.crossover_type 
-  ? advice.recommendations.ma_crossover.crossover_type === 'none' 
-    ? 'No Crossover' 
-    : advice.recommendations.ma_crossover.crossover_type === 'bullish' 
-      ? 'Bullish Crossover' 
-      : 'Bearish Crossover'
-  : 'Crossover data not available'}
-                  </div>
-                </div>
+
               </div>
               
               {/* Moving Averages Comparison */}
