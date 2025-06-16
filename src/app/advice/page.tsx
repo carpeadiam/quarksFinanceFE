@@ -12,62 +12,118 @@ import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 
 export default function AdvicePage() {
   const [symbol, setSymbol] = useState('');
-  interface AdviceData {
-    symbol: string;
-    current_price: number;
-    one_year_return: number;
-    predictions: {
-      arima_7day: number | null; // Change from optional to nullable
+interface AdviceData {
+  symbol: string;
+  current_price: number;
+  one_year_return: number;
+  predictions: {
+    arima_7day: number | null;
+  };
+  recommendations: {
+    buy_and_hold: {
+      recommendation: string;
+      reason: string;
+      return: number;
+      signal: string;
     };
-    recommendations: {
-      buy_and_hold: {
-        recommendation: string;
-        reason: string;
-        return: number;
-        signal: string;
-      };
-      momentum: {
-        recommendation: string;
-        reason: string;
-        momentum: number;
-        signal: string;
-      };
-      bollinger: {
-        recommendation: string;
-        reason: string;
-        signal: string;
-        current_position: string;
-        bands: {
-          upper: number;
-          middle: number;
-          lower: number;
-        };
-        current_price: number;
-        distance_from_ma: number;
-      };
-      ma_crossover: {
-        recommendation: string;
-        reason: string;
-        signal: string;
-      };
+    momentum: {
+      recommendation: string;
+      reason: string;
+      momentum: number;
+      signal: string;
     };
-    final_recommendation: {
+    bollinger: {
       recommendation: string;
       reason: string;
       signal: string;
-      signal_counts: {
-        buy: number;
-        hold: number;
-        sell: number;
+      current_position: string;
+      bands: {
+        upper: number;
+        middle: number;
+        lower: number;
       };
-      strategy_details: Array<{
-        strategy: string;
-        signal: string;
-        reason: string;
-      }>;
+      current_price: number;
+      distance_from_ma: number;
     };
-    timestamp: string; // Add this required field
-  }
+    ma_crossover: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      moving_averages: {
+        sma200: number;
+        sma50: number;
+      };
+    };
+    breakout: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      support: number;
+      resistance: number;
+    };
+    keltner: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      lower_band: number;
+      upper_band: number;
+    };
+    macd: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      macd: number;
+      signal_line: number;
+    };
+    mean_reversion: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      z_score: number;
+    };
+    parabolic_sar: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      sar_value: number;
+    };
+    rsi: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      rsi_value: number;
+    };
+    stochastic: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      d_percent: number;
+      k_percent: number;
+    };
+    volume_spike: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      volume_ratio: number;
+    };
+  };
+  final_recommendation: {
+    recommendation: string;
+    reason: string;
+    signal: string;
+    signal_counts: {
+      buy: number;
+      hold: number;
+      sell: number;
+    };
+    strategy_details: Array<{
+      strategy: string;
+      signal: string;
+      reason: string;
+    }>;
+  };
+  timestamp: string;
+}
   
   // Then update the state declaration:
   const [advice, setAdvice] = useState<AdviceData | null>(null);
@@ -307,6 +363,71 @@ export default function AdvicePage() {
         advice.recommendations.ma_crossover.signal,
         currentY
       );
+
+      // Add these new strategy sections after the existing ones in exportAsImage
+currentY = drawStrategy(
+  'Breakout Strategy',
+  advice.recommendations.breakout.recommendation,
+  advice.recommendations.breakout.reason,
+  advice.recommendations.breakout.signal,
+  currentY
+);
+
+currentY = drawStrategy(
+  'Keltner Channels',
+  advice.recommendations.keltner.recommendation,
+  advice.recommendations.keltner.reason,
+  advice.recommendations.keltner.signal,
+  currentY
+);
+
+currentY = drawStrategy(
+  'MACD Strategy',
+  advice.recommendations.macd.recommendation,
+  advice.recommendations.macd.reason,
+  advice.recommendations.macd.signal,
+  currentY
+);
+
+currentY = drawStrategy(
+  'Mean Reversion',
+  advice.recommendations.mean_reversion.recommendation,
+  advice.recommendations.mean_reversion.reason,
+  advice.recommendations.mean_reversion.signal,
+  currentY
+);
+
+currentY = drawStrategy(
+  'Parabolic SAR',
+  advice.recommendations.parabolic_sar.recommendation,
+  advice.recommendations.parabolic_sar.reason,
+  advice.recommendations.parabolic_sar.signal,
+  currentY
+);
+
+currentY = drawStrategy(
+  'RSI Strategy',
+  advice.recommendations.rsi.recommendation,
+  advice.recommendations.rsi.reason,
+  advice.recommendations.rsi.signal,
+  currentY
+);
+
+currentY = drawStrategy(
+  'Stochastic Oscillator',
+  advice.recommendations.stochastic.recommendation,
+  advice.recommendations.stochastic.reason,
+  advice.recommendations.stochastic.signal,
+  currentY
+);
+
+currentY = drawStrategy(
+  'Volume Spike',
+  advice.recommendations.volume_spike.recommendation,
+  advice.recommendations.volume_spike.reason,
+  advice.recommendations.volume_spike.signal,
+  currentY
+);
       
       // Add divider before final recommendation
       ctx.beginPath();

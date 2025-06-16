@@ -158,23 +158,30 @@ export default function TerminalPage() {
 
 
         <div className="max-w-4xl mx-auto mb-12 bg-white p-8 rounded-xl border border-gray-200" style={{ fontFamily: 'Rubik, sans-serif' }}>
-          <div
-            ref={terminalRef}
-            className="h-96 bg-gray-900 text-green-400 font-mono p-4 overflow-y-auto rounded-lg mb-4"
-          >
-            {output.map((line, i) => (
-              <div key={i} className="mb-1">
-                {typeof line === 'string' && line.startsWith('{')
-                  ? <pre className="whitespace-pre-wrap">{JSON.stringify(JSON.parse(line), null, 2)}</pre>
-                  : line}
-              </div>
-            ))}
-            {loading && (
-              <div className="flex items-center gap-2">
-                <div className="animate-pulse">Executing...</div>
-              </div>
-            )}
+<div
+  ref={terminalRef}
+  className="h-96 bg-gray-900 text-green-400 font-mono p-4 overflow-y-auto rounded-lg mb-4 whitespace-pre-wrap"
+>
+  {output.map((line, i) => (
+    <div key={i} className="mb-1">
+      {typeof line === 'string' ? (
+        line.split('\n').map((paragraph, j) => (
+          <div key={j}>
+            {paragraph}
+            {j < line.split('\n').length - 1 && <br />}
           </div>
+        ))
+      ) : (
+        <pre className="whitespace-pre-wrap">{JSON.stringify(line, null, 2)}</pre>
+      )}
+    </div>
+  ))}
+  {loading && (
+    <div className="flex items-center gap-2">
+      <div className="animate-pulse">Executing...</div>
+    </div>
+  )}
+</div>
 
           <form onSubmit={handleSubmit} className="flex gap-2">
             <span className="text-green-400 font-mono">QuarkScript&gt;</span>

@@ -60,13 +60,62 @@ type AdviceData = {
       recommendation: string;
       reason: string;
       signal: string;
-      ma_status?: string; // Make this optional
-      crossover_type?: string; // Add this field
-      current_price?: number; // Add this field
-      moving_averages?: { // Add this field
+      moving_averages: {
         sma200: number;
         sma50: number;
       };
+    };
+    breakout: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      support: number;
+      resistance: number;
+    };
+    keltner: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      lower_band: number;
+      upper_band: number;
+    };
+    macd: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      macd: number;
+      signal_line: number;
+    };
+    mean_reversion: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      z_score: number;
+    };
+    parabolic_sar: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      sar_value: number;
+    };
+    rsi: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      rsi_value: number;
+    };
+    stochastic: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      d_percent: number;
+      k_percent: number;
+    };
+    volume_spike: {
+      recommendation: string;
+      reason: string;
+      signal: string;
+      volume_ratio: number;
     };
   };
   predictions: {
@@ -86,7 +135,7 @@ type AdviceData = {
       signal: string;
       reason: string;
     }>;
-  }; // Change from string to object
+  };
   timestamp: string;
 };
 
@@ -98,6 +147,26 @@ export default function AdviceCard({ advice }: AdviceCardProps) {
   const [activeTab, setActiveTab] = useState('summary');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalChartType, setModalChartType] = useState<'bollinger' | 'strategy' | null>(null);
+
+
+  const tabOptions = [
+    { value: 'summary', label: 'Summary' },
+    { value: 'buyhold', label: 'Buy & Hold' },
+    { value: 'momentum', label: 'Momentum' },
+    { value: 'bollinger', label: 'Bollinger Bands' },
+    { value: 'ma', label: 'MA Crossover' },
+    { value: 'breakout', label: 'Breakout' },
+    { value: 'keltner', label: 'Keltner' },
+    { value: 'macd', label: 'MACD' },
+    { value: 'meanreversion', label: 'Mean Reversion' },
+    { value: 'parabolic', label: 'Parabolic SAR' },
+    { value: 'rsi', label: 'RSI' },
+    { value: 'stochastic', label: 'Stochastic' },
+    { value: 'volume', label: 'Volume' },
+    { value: 'prediction', label: 'Predictions' }
+  ];
+
+
 
   const getSignalColor = (signal: string) => {
     switch (signal.toLowerCase()) {
@@ -173,30 +242,78 @@ export default function AdviceCard({ advice }: AdviceCardProps) {
   };
 
   // Prepare data for strategy comparison
-  const strategyComparisonData = {
-    labels: ['Buy & Hold', 'Momentum', 'Bollinger', 'MA Crossover'],
-    datasets: [{
-      label: 'Strategy Signals',
-      data: [
-        advice.recommendations.buy_and_hold.signal.toLowerCase() === 'buy' ? 1 : advice.recommendations.buy_and_hold.signal.toLowerCase() === 'sell' ? -1 : 0,
-        advice.recommendations.momentum.signal.toLowerCase() === 'buy' ? 1 : advice.recommendations.momentum.signal.toLowerCase() === 'sell' ? -1 : 0,
-        advice.recommendations.bollinger.signal.toLowerCase() === 'buy' ? 1 : advice.recommendations.bollinger.signal.toLowerCase() === 'sell' ? -1 : 0,
-        advice.recommendations.ma_crossover.signal.toLowerCase() === 'buy' ? 1 : advice.recommendations.ma_crossover.signal.toLowerCase() === 'sell' ? -1 : 0
-      ],
-      backgroundColor: ['rgba(245, 158, 11, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(245, 158, 11, 0.7)'].map((defaultColor, index) => {
-        const signals = [
-          advice.recommendations.buy_and_hold.signal,
-          advice.recommendations.momentum.signal,
-          advice.recommendations.bollinger.signal,
-          advice.recommendations.ma_crossover.signal
-        ];
-        const signal = signals[index].toLowerCase();
-        if (signal === 'buy') return 'rgba(16, 185, 129, 0.7)';
-        if (signal === 'sell') return 'rgba(239, 68, 68, 0.7)';
-        return 'rgba(245, 158, 11, 0.7)'; // Amber color for Hold
-      })
-    }]
-  };
+const strategyComparisonData = {
+  labels: [
+    'Buy & Hold', 
+    'Momentum', 
+    'Bollinger', 
+    'MA Crossover',
+    'Breakout',
+    'Keltner',
+    'MACD',
+    'Mean Reversion',
+    'Parabolic SAR',
+    'RSI',
+    'Stochastic',
+    'Volume Spike'
+  ],
+  datasets: [{
+    label: 'Strategy Signals',
+    data: [
+      // Convert signals to numerical values (buy: 1, hold: 0, sell: -1)
+      advice.recommendations.buy_and_hold.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.buy_and_hold.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.momentum.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.momentum.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.bollinger.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.bollinger.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.ma_crossover.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.ma_crossover.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.breakout.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.breakout.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.keltner.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.keltner.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.macd.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.macd.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.mean_reversion.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.mean_reversion.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.parabolic_sar.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.parabolic_sar.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.rsi.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.rsi.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.stochastic.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.stochastic.signal.toLowerCase() === 'sell' ? -1 : 0,
+      advice.recommendations.volume_spike.signal.toLowerCase() === 'buy' ? 1 : 
+        advice.recommendations.volume_spike.signal.toLowerCase() === 'sell' ? -1 : 0
+    ],
+    backgroundColor: [
+      advice.recommendations.buy_and_hold.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.buy_and_hold.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.momentum.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.momentum.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.bollinger.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.bollinger.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.ma_crossover.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.ma_crossover.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.breakout.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.breakout.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.keltner.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.keltner.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.macd.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.macd.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.mean_reversion.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.mean_reversion.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.parabolic_sar.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.parabolic_sar.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.rsi.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.rsi.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.stochastic.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.stochastic.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+      advice.recommendations.volume_spike.signal.toLowerCase() === 'buy' ? 'rgba(16, 185, 129, 0.7)' : 
+        advice.recommendations.volume_spike.signal.toLowerCase() === 'sell' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(245, 158, 11, 0.7)'
+    ]
+  }]
+};
 
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ fontFamily: 'Rubik, sans-serif' }}>
@@ -236,47 +353,22 @@ export default function AdviceCard({ advice }: AdviceCardProps) {
         </div>
       </div>
     </div>
-
-    <div className="border-b bg-white sticky top-0 z-10">
-      <div className="flex overflow-x-auto px-4">
-        <button
-          className={`px-5 py-3 font-medium transition-colors ${activeTab === 'summary' ? 'border-b-2 border-gray-800 text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('summary')}
-        >
-          Summary
-        </button>
-        <button
-          className={`px-5 py-3 font-medium transition-colors ${activeTab === 'buyhold' ? 'border-b-2 border-gray-800 text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('buyhold')}
-        >
-          Buy & Hold
-        </button>
-        <button
-          className={`px-5 py-3 font-medium transition-colors ${activeTab === 'momentum' ? 'border-b-2 border-gray-800 text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('momentum')}
-        >
-          Momentum
-        </button>
-        <button
-          className={`px-5 py-3 font-medium transition-colors ${activeTab === 'bollinger' ? 'border-b-2 border-gray-800 text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('bollinger')}
-        >
-          Bollinger Bands
-        </button>
-        <button
-          className={`px-5 py-3 font-medium transition-colors ${activeTab === 'ma' ? 'border-b-2 border-gray-800 text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('ma')}
-        >
-          MA Crossover
-        </button>
-        <button
-          className={`px-5 py-3 font-medium transition-colors ${activeTab === 'prediction' ? 'border-b-2 border-gray-800 text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('prediction')}
-        >
-          Predictions
-        </button>
+<div className="border-b bg-white sticky top-0 z-10 px-4 py-3">
+        <div className="relative">
+          <select
+            className="block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+          >
+            {tabOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-    </div>
+
 
       <div className="p-6">
         {activeTab === 'summary' && (
@@ -321,22 +413,30 @@ export default function AdviceCard({ advice }: AdviceCardProps) {
             </div>
             
             {/* Strategy Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              {[
-                { name: 'Buy & Hold', data: advice.recommendations.buy_and_hold },
-                { name: 'Momentum', data: advice.recommendations.momentum },
-                { name: 'Bollinger Bands', data: advice.recommendations.bollinger },
-                { name: 'MA Crossover', data: advice.recommendations.ma_crossover }
-              ].map((strategy, index) => (
-                <div key={index} className={`border rounded-lg p-5 ${getSignalBgColor(strategy.data.signal)}`}>
-                  <div className="font-medium text-gray-800 mb-2">{strategy.name}</div>
-                  <div className={`text-lg font-semibold mb-3 ${getSignalColor(strategy.data.signal)}`}>
-                    {strategy.data.signal.toUpperCase()}
-                  </div>
-                  <div className="text-sm text-gray-700">{strategy.data.recommendation}</div>
-                </div>
-              ))}
-            </div>
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+  {[
+    { name: 'Buy & Hold', data: advice.recommendations.buy_and_hold },
+    { name: 'Momentum', data: advice.recommendations.momentum },
+    { name: 'Bollinger Bands', data: advice.recommendations.bollinger },
+    { name: 'MA Crossover', data: advice.recommendations.ma_crossover },
+    { name: 'Breakout', data: advice.recommendations.breakout },
+    { name: 'Keltner Channels', data: advice.recommendations.keltner },
+    { name: 'MACD', data: advice.recommendations.macd },
+    { name: 'Mean Reversion', data: advice.recommendations.mean_reversion },
+    { name: 'Parabolic SAR', data: advice.recommendations.parabolic_sar },
+    { name: 'RSI', data: advice.recommendations.rsi },
+    { name: 'Stochastic', data: advice.recommendations.stochastic },
+    { name: 'Volume Spike', data: advice.recommendations.volume_spike }
+  ].map((strategy, index) => (
+    <div key={index} className={`border rounded-lg p-5 ${getSignalBgColor(strategy.data.signal)}`}>
+      <div className="font-medium text-gray-800 mb-2">{strategy.name}</div>
+      <div className={`text-lg font-semibold mb-3 ${getSignalColor(strategy.data.signal)}`}>
+        {strategy.data.signal.toUpperCase()}
+      </div>
+      <div className="text-sm text-gray-700">{strategy.data.recommendation}</div>
+    </div>
+  ))}
+</div>
           </div>
         )}
 
@@ -432,6 +532,369 @@ export default function AdviceCard({ advice }: AdviceCardProps) {
             </div>
           </div>
         )}
+
+{activeTab === 'breakout' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">Breakout Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.breakout.signal)}`}>
+            {advice.recommendations.breakout.recommendation}
+          </div>
+        </div>
+
+      </div>
+      
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Support Level</div>
+          <div className="text-base font-medium text-black">
+            ₹{advice.recommendations.breakout.support?.toFixed(2) || 'N/A'}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">Resistance Level</div>
+          <div className="text-base font-medium text-black">
+            ₹{advice.recommendations.breakout.resistance?.toFixed(2) || 'N/A'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.breakout.reason}</div>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeTab === 'keltner' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">Keltner Channels Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.keltner.signal)}`}>
+            {advice.recommendations.keltner.recommendation}
+          </div>
+        </div>
+
+      </div>
+      
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Upper Band</div>
+          <div className="text-base font-medium text-black">
+            ₹{advice.recommendations.keltner.upper_band?.toFixed(2) || 'N/A'}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">Lower Band</div>
+          <div className="text-base font-medium text-black">
+            ₹{advice.recommendations.keltner.lower_band?.toFixed(2) || 'N/A'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.keltner.reason}</div>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeTab === 'macd' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">MACD Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.macd.signal)}`}>
+            {advice.recommendations.macd.recommendation}
+          </div>
+        </div>
+
+      </div>
+      
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">MACD Line</div>
+          <div className={`text-base font-medium ${advice.recommendations.macd.macd >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {advice.recommendations.macd.macd?.toFixed(4) || 'N/A'}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">Signal Line</div>
+          <div className={`text-base font-medium ${advice.recommendations.macd.signal_line >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {advice.recommendations.macd.signal_line?.toFixed(4) || 'N/A'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.macd.reason}</div>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeTab === 'meanreversion' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">Mean Reversion Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.mean_reversion.signal)}`}>
+            {advice.recommendations.mean_reversion.recommendation}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">Z-Score</div>
+          <div className={`text-xl font-semibold ${Math.abs(advice.recommendations.mean_reversion.z_score) > 2 ? 'text-red-600' : 'text-green-600'}`}>
+            {advice.recommendations.mean_reversion.z_score?.toFixed(2) || 'N/A'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.mean_reversion.reason}</div>
+      </div>
+      
+      <div className="mt-4 text-sm text-gray-700">
+        <p>Z-Score Interpretation:</p>
+        <ul className="list-disc pl-5 mt-2">
+          <li>Above 2: Overbought (potential sell signal)</li>
+          <li>Below -2: Oversold (potential buy signal)</li>
+          <li>Between -2 and 2: Within normal range</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeTab === 'parabolic' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">Parabolic SAR Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.parabolic_sar.signal)}`}>
+            {advice.recommendations.parabolic_sar.recommendation}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">SAR Value</div>
+          <div className="text-xl font-semibold text-black">
+            ₹{advice.recommendations.parabolic_sar.sar_value?.toFixed(2) || 'N/A'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Price vs SAR</div>
+        <div className={`text-base font-medium ${advice.current_price > advice.recommendations.parabolic_sar.sar_value ? 'text-green-600' : 'text-red-600'}`}>
+          {advice.current_price > advice.recommendations.parabolic_sar.sar_value ? 'Above SAR (Uptrend)' : 'Below SAR (Downtrend)'}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.parabolic_sar.reason}</div>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeTab === 'rsi' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">RSI Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.rsi.signal)}`}>
+            {advice.recommendations.rsi.recommendation}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">RSI Value</div>
+          <div className={`text-xl font-semibold ${
+            advice.recommendations.rsi.rsi_value > 70 ? 'text-red-600' :
+            advice.recommendations.rsi.rsi_value < 30 ? 'text-green-600' : 'text-yellow-600'
+          }`}>
+            {advice.recommendations.rsi.rsi_value?.toFixed(2) || 'N/A'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.rsi.reason}</div>
+      </div>
+      
+      <div className="mt-4 text-sm text-gray-700">
+        <p>RSI Interpretation:</p>
+        <ul className="list-disc pl-5 mt-2">
+          <li>Above 70: Overbought (potential sell signal)</li>
+          <li>Below 30: Oversold (potential buy signal)</li>
+          <li>Between 30 and 70: Neutral</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeTab === 'stochastic' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">Stochastic Oscillator Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.stochastic.signal)}`}>
+            {advice.recommendations.stochastic.recommendation}
+          </div>
+        </div>
+
+      </div>
+      
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">%K Line</div>
+          <div className={`text-base font-medium ${
+            advice.recommendations.stochastic.k_percent > 80 ? 'text-red-600' :
+            advice.recommendations.stochastic.k_percent < 20 ? 'text-green-600' : 'text-yellow-600'
+          }`}>
+            {advice.recommendations.stochastic.k_percent?.toFixed(2) || 'N/A'}%
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">%D Line</div>
+          <div className={`text-base font-medium ${
+            advice.recommendations.stochastic.d_percent > 80 ? 'text-red-600' :
+            advice.recommendations.stochastic.d_percent < 20 ? 'text-green-600' : 'text-yellow-600'
+          }`}>
+            {advice.recommendations.stochastic.d_percent?.toFixed(2) || 'N/A'}%
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.stochastic.reason}</div>
+      </div>
+      
+      <div className="mt-4 text-sm text-gray-700">
+        <p>Stochastic Interpretation:</p>
+        <ul className="list-disc pl-5 mt-2">
+          <li>Above 80: Overbought (potential sell signal)</li>
+          <li>Below 20: Oversold (potential buy signal)</li>
+          <li>Between 20 and 80: Neutral</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeTab === 'volume' && (
+  <div>
+    <h3 className="text-xl font-semibold mb-4 text-black">Volume Spike Strategy</h3>
+    <div className="bg-gray-50 p-4 rounded-md shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-gray-700">Recommendation</div>
+          <div className={`text-xl font-semibold ${getSignalColor(advice.recommendations.volume_spike.signal)}`}>
+            {advice.recommendations.volume_spike.recommendation}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-gray-700">Volume Ratio</div>
+          <div className={`text-xl font-semibold ${advice.recommendations.volume_spike.volume_ratio > 2 ? 'text-green-600' : 'text-gray-600'}`}>
+            {advice.recommendations.volume_spike.volume_ratio?.toFixed(2) || 'N/A'}x
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Current Price</div>
+        <div className="text-base font-medium text-black">
+          ₹{advice.current_price.toFixed(2)}
+        </div>
+      </div>
+      
+      <div className="mt-4">
+        <div className="text-sm text-gray-700">Reasoning</div>
+        <div className="text-base text-black">{advice.recommendations.volume_spike.reason}</div>
+      </div>
+      
+      <div className="mt-4 text-sm text-gray-700">
+        <p>Volume Ratio Interpretation:</p>
+        <ul className="list-disc pl-5 mt-2">
+          <li>Above 2x: Significant volume spike (stronger signal)</li>
+          <li>Below 2x: Normal volume (weaker signal)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
 
         {activeTab === 'prediction' && (
           <div>

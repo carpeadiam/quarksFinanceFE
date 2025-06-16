@@ -41,13 +41,82 @@ const LiveStrategiesPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
-  const [newStrategy, setNewStrategy] = useState({
-    portfolio_id: '',
-    name: '',
-    symbol: '',
-    strategy_type: 'BOLLINGER'
-  });
+const [newStrategy, setNewStrategy] = useState({
+  portfolio_id: '',
+  name: '',
+  symbol: '',
+  strategy_type: 'BOLLINGER',
+  parameters: {} as {[key: string]: number} // Initialize as empty object
+});
   const [strategyStates, setStrategyStates] = useState<{[key: number]: {isActive: boolean, signal: string}}>({});
+
+const [showParams, setShowParams] = useState(false);
+
+  type StrategyParams = {
+  [key: string]: {
+    label: string;
+    name: string;
+    type: string;
+    defaultValue: number;
+    min: number;
+    max: number;
+    step?: number;
+  }[];
+};
+
+const strategyParameters: StrategyParams = {
+  MOMENTUM: [
+    { label: 'Lookback Days', name: 'lookback_days', type: 'number', defaultValue: 14, min: 5, max: 100 },
+    { label: 'Threshold', name: 'threshold', type: 'number', defaultValue: 0.05, min: 0.01, max: 0.2, step: 0.01 }
+  ],
+  BOLLINGER: [
+    { label: 'Window', name: 'window', type: 'number', defaultValue: 20, min: 10, max: 50 },
+    { label: 'Standard Deviations', name: 'num_std', type: 'number', defaultValue: 2, min: 1, max: 3, step: 0.1 }
+  ],
+  MACROSS: [
+    { label: 'Short Window', name: 'short_window', type: 'number', defaultValue: 50, min: 5, max: 100 },
+    { label: 'Long Window', name: 'long_window', type: 'number', defaultValue: 200, min: 50, max: 300 }
+  ],
+  RSI: [
+    { label: 'RSI Window', name: 'rsi_window', type: 'number', defaultValue: 14, min: 5, max: 30 },
+    { label: 'Overbought Level', name: 'overbought', type: 'number', defaultValue: 70, min: 50, max: 90 },
+    { label: 'Oversold Level', name: 'oversold', type: 'number', defaultValue: 30, min: 10, max: 50 }
+  ],
+  MACD: [
+    { label: 'Fast Period', name: 'fast', type: 'number', defaultValue: 12, min: 5, max: 25 },
+    { label: 'Slow Period', name: 'slow', type: 'number', defaultValue: 26, min: 15, max: 50 },
+    { label: 'Signal Period', name: 'signal', type: 'number', defaultValue: 9, min: 5, max: 20 }
+  ],
+  MEANREVERSION: [
+    { label: 'Window', name: 'window', type: 'number', defaultValue: 20, min: 10, max: 50 },
+    { label: 'Z-Score Threshold', name: 'z_threshold', type: 'number', defaultValue: 2, min: 1, max: 3, step: 0.1 }
+  ],
+  BREAKOUT: [
+    { label: 'Window', name: 'window', type: 'number', defaultValue: 20, min: 10, max: 50 },
+    { label: 'Multiplier', name: 'multiplier', type: 'number', defaultValue: 1.01, min: 1.001, max: 1.1, step: 0.001 }
+  ],
+  VOLUMESPIKE: [
+    { label: 'Window', name: 'window', type: 'number', defaultValue: 20, min: 10, max: 50 },
+    { label: 'Multiplier', name: 'multiplier', type: 'number', defaultValue: 2.5, min: 1.5, max: 5, step: 0.1 }
+  ],
+  KELTNER: [
+    { label: 'Window', name: 'window', type: 'number', defaultValue: 20, min: 10, max: 50 },
+    { label: 'ATR Multiplier', name: 'atr_multiplier', type: 'number', defaultValue: 2, min: 1, max: 3, step: 0.1 }
+  ],
+  STOCHASTIC: [
+    { label: '%K Window', name: 'k_window', type: 'number', defaultValue: 14, min: 5, max: 30 },
+    { label: '%D Window', name: 'd_window', type: 'number', defaultValue: 3, min: 2, max: 10 },
+    { label: 'Overbought Level', name: 'overbought', type: 'number', defaultValue: 80, min: 70, max: 90 },
+    { label: 'Oversold Level', name: 'oversold', type: 'number', defaultValue: 20, min: 10, max: 30 }
+  ],
+  PARABOLICSAR: [
+    { label: 'Acceleration', name: 'acceleration', type: 'number', defaultValue: 0.02, min: 0.01, max: 0.1, step: 0.01 },
+    { label: 'Maximum', name: 'maximum', type: 'number', defaultValue: 0.2, min: 0.1, max: 0.5, step: 0.01 }
+  ],
+  BUYHOLD: [],
+  QUARKS: []
+};
+
   
   // Check login status on component mount
   useEffect(() => {
@@ -103,6 +172,24 @@ const LiveStrategiesPage: React.FC = () => {
     }, 3000);
   };
   
+useEffect(() => {
+  const initialParams: {[key: string]: number} = {};
+  const paramsForStrategy = strategyParameters[newStrategy.strategy_type as keyof StrategyParams] || [];
+  
+  paramsForStrategy.forEach(param => {
+    initialParams[param.name] = param.defaultValue;
+  });
+  
+  setNewStrategy(prev => ({
+    ...prev,
+    parameters: initialParams
+  }));
+}, [newStrategy.strategy_type]);
+
+// Add parameter change handler
+
+
+
   const fetchPortfolios = async (authToken: string) => {
     try {
       setLoading(true);
@@ -147,6 +234,66 @@ const LiveStrategiesPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+const handleParamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = e.target;
+  setNewStrategy(prev => ({
+    ...prev,
+    parameters: {
+      ...prev.parameters,
+      [name]: parseFloat(value)
+    }
+  }));
+};
+
+
+
+  const deleteStrategy = async (strategyId: number) => {
+  try {
+    setLoading(true);
+    const response = await fetch(`${baseURL}/strategies/${strategyId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('quarksFinanceToken');
+        setIsLoggedIn(false);
+        router.push('/login');
+        showMessage('Session expired. Please log in again.', true);
+        return;
+      }
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Update strategies list from API response
+    if (data && data.data && Array.isArray(data.data)) {
+      setStrategies(data.data);
+      setHasStrategies(data.hasStrategies === "True" || data.data.length > 0);
+    }
+    
+    showMessage('Strategy deleted successfully');
+  } catch (err) {
+    showMessage('Error deleting strategy. Please try again.', true);
+    console.error("Delete strategy error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const confirmDelete = (strategyId: number, strategyName: string) => {
+  if (window.confirm(`Are you sure you want to delete the strategy "${strategyName}"?`)) {
+    deleteStrategy(strategyId);
+  }
+};
+
+
   
   const fetchStrategies = async (authToken: string) => {
     try {
@@ -200,20 +347,31 @@ const LiveStrategiesPage: React.FC = () => {
   const createStrategy = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${baseURL}/strategies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-access-token': token
-        },
-        body: JSON.stringify({
-          portfolio_id: parseInt(newStrategy.portfolio_id),
-          name: newStrategy.name,
-          symbol: newStrategy.symbol,
-          strategy_type: newStrategy.strategy_type,
-          parameters: {}
-        })
-      });
+console.log("Creating strategy with:", {
+  portfolio_id: parseInt(newStrategy.portfolio_id),
+  name: newStrategy.name,
+  symbol: newStrategy.symbol,
+  strategy_type: newStrategy.strategy_type,
+  parameters: newStrategy.parameters
+});
+
+
+    const response = await fetch(`${baseURL}/strategies`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-token': token
+      },
+      body: JSON.stringify({
+        portfolio_id: parseInt(newStrategy.portfolio_id),
+        name: newStrategy.name,
+        symbol: newStrategy.symbol,
+        strategy_type: newStrategy.strategy_type,
+        parameters: newStrategy.parameters // Include parameters in the request
+      })
+    });
+
+
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
@@ -243,6 +401,7 @@ const LiveStrategiesPage: React.FC = () => {
     } catch (err) {
       showMessage('Error creating strategy. Please try again.', true);
       console.error("Create strategy error:", err);
+      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -326,32 +485,74 @@ const LiveStrategiesPage: React.FC = () => {
   };
   
   const getStrategyTypeColor = (type: string) => {
-    switch (type.toUpperCase()) {
-      case 'MOMENTUM':
-        return 'bg-blue-100 text-blue-800';
-      case 'BOLLINGER':
-        return 'bg-green-100 text-green-800';
-      case 'MACROSS':
-        return 'bg-purple-100 text-purple-800';
-      case 'TREND_FOLLOWING':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  switch (type.toUpperCase()) {
+    case 'MOMENTUM':
+      return 'bg-blue-100 text-blue-800';
+    case 'BOLLINGER':
+      return 'bg-green-100 text-green-800';
+    case 'MACROSS':
+      return 'bg-purple-100 text-purple-800';
+    case 'RSI':
+      return 'bg-pink-100 text-pink-800';
+    case 'MACD':
+      return 'bg-indigo-100 text-indigo-800';
+    case 'MEANREVERSION':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'BREAKOUT':
+      return 'bg-teal-100 text-teal-800';
+    case 'VOLUMESPIKE':
+      return 'bg-cyan-100 text-cyan-800';
+    case 'KELTNER':
+      return 'bg-amber-100 text-amber-800';
+    case 'STOCHASTIC':
+      return 'bg-lime-100 text-lime-800';
+    case 'PARABOLICSAR':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'TREND_FOLLOWING':
+      return 'bg-orange-100 text-orange-800';
+    case 'BUYHOLD':
+      return 'bg-gray-100 text-gray-800';
+    case 'QUARKS':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
 
-  const getStrategyTypeDisplayName = (type: string) => {
-    switch (type.toUpperCase()) {
-      case 'BOLLINGER':
-        return 'Bollinger Bands';
-      case 'MACROSS':
-        return 'Moving Average Crossover';
-      case 'MOMENTUM':
-        return 'Momentum';
-      default:
-        return type;
-    }
-  };
+const getStrategyTypeDisplayName = (type: string) => {
+  switch (type.toUpperCase()) {
+    case 'BOLLINGER':
+      return 'Bollinger Bands';
+    case 'MACROSS':
+      return 'Moving Average Crossover';
+    case 'MOMENTUM':
+      return 'Momentum';
+    case 'RSI':
+      return 'Relative Strength Index';
+    case 'MACD':
+      return 'Moving Average Convergence Divergence';
+    case 'MEANREVERSION':
+      return 'Mean Reversion';
+    case 'BREAKOUT':
+      return 'Breakout';
+    case 'VOLUMESPIKE':
+      return 'Volume Spike';
+    case 'KELTNER':
+      return 'Keltner Channels';
+    case 'STOCHASTIC':
+      return 'Stochastic Oscillator';
+    case 'PARABOLICSAR':
+      return 'Parabolic SAR';
+    case 'TREND_FOLLOWING':
+      return 'Trend Following';
+    case 'BUYHOLD':
+      return 'Buy and Hold';
+    case 'QUARKS':
+      return 'Quarks Strategy';
+    default:
+      return type;
+  }
+};
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never';
@@ -457,10 +658,22 @@ const LiveStrategiesPage: React.FC = () => {
           className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#41748D] focus:border-transparent outline-none"
         >
           <option value="BOLLINGER">Bollinger Bands</option>
-          <option value="MOMENTUM">Momentum</option>
-          <option value="MACROSS">Moving Average Crossover</option>
+  <option value="MOMENTUM">Momentum</option>
+  <option value="MACROSS">Moving Average Crossover</option>
+  <option value="RSI">Relative Strength Index (RSI)</option>
+  <option value="MACD">Moving Average Convergence Divergence (MACD)</option>
+  <option value="MEANREVERSION">Mean Reversion</option>
+  <option value="BREAKOUT">Breakout</option>
+  <option value="VOLUMESPIKE">Volume Spike</option>
+  <option value="KELTNER">Keltner Channels</option>
+  <option value="STOCHASTIC">Stochastic Oscillator</option>
+  <option value="PARABOLICSAR">Parabolic SAR</option>
+
         </select>
       </div>
+
+      {/* Add this after the strategy type select in the form */}
+
 
       <div>
         <button
@@ -471,6 +684,59 @@ const LiveStrategiesPage: React.FC = () => {
           {loading ? 'Creating...' : 'Create Strategy'}
         </button>
       </div>
+
+      <div className="mt-4">
+  <button
+    type="button"
+    onClick={() => setShowParams(!showParams)}
+    className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none"
+  >
+    <span>Advanced Strategy Parameters</span>
+    <svg
+      className={`ml-2 h-4 w-4 transition-transform ${showParams ? 'rotate-180' : ''}`}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path
+        fillRule="evenodd"
+        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+        clipRule="evenodd"
+      />
+    </svg>
+  </button>
+  
+{showParams && (
+  <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+    {strategyParameters[newStrategy.strategy_type as keyof StrategyParams]?.map((param, index) => (
+      <div key={index}>
+        <label htmlFor={param.name} className="block text-sm font-medium text-gray-700 mb-1">
+          {param.label}
+        </label>
+        <input
+          type={param.type}
+          id={param.name}
+          name={param.name}
+          value={newStrategy.parameters?.[param.name] ?? param.defaultValue}
+          onChange={handleParamChange}
+          min={param.min}
+          max={param.max}
+          step={param.step || 1}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 shadow-sm text-gray-800 bg-white"
+        />
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>Min: {param.min}</span>
+          <span>Default: {param.defaultValue}</span>
+          <span>Max: {param.max}</span>
+        </div>
+      </div>
+    ))}
+    {strategyParameters[newStrategy.strategy_type as keyof StrategyParams]?.length === 0 && (
+      <p className="text-sm text-gray-500">No parameters available for this strategy.</p>
+    )}
+  </div>
+)}
+</div>
     </div>
   </div>
 </div>
@@ -524,56 +790,80 @@ const LiveStrategiesPage: React.FC = () => {
                   <div className="border border-t-0 rounded-b-lg overflow-hidden">
                     <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b bg-gray-50">
-                          <th className="text-left p-4 border-r">Strategy Name</th>
-                          <th className="text-left p-4 border-r">Symbol</th>
-                          <th className="text-left p-4 border-r">Type</th>
-                          <th className="text-left p-4 border-r">Portfolio</th>
-                          
-                          <th className="text-left p-4 border-r">Status</th>
-                          <th className="text-center p-4">Toggle</th>
-                        </tr>
-                      </thead>
+  <tr className="border-b bg-gray-50">
+    <th className="text-left p-4 border-r">Strategy Name</th>
+    <th className="text-left p-4 border-r">Symbol</th>
+    <th className="text-left p-4 border-r">Type</th>
+    <th className="text-left p-4 border-r">Portfolio</th>
+    <th className="text-left p-4 border-r">Status</th>
+    <th className="text-left p-4 border-r">Last Executed</th>
+    <th className="text-center p-4 border-r">Toggle</th>
+    <th className="text-center p-4">Actions</th>
+  </tr>
+</thead>
                       <tbody>
                         {strategiesToShow.map((strategy) => {
                           const strategyState = strategyStates[strategy.id] || { isActive: false, signal: 'HOLD' };
                           return (
                             <tr key={strategy.id} className="border-b hover:bg-gray-50">
-                              <td className="p-4 border-r font-medium">{strategy.name}</td>
-                              <td className="p-4 border-r">
-                                <span className="bg-gray-100 px-2 py-1 rounded text-sm">
-                                  {strategy.symbol}
-                                </span>
-                              </td>
-                              <td className="p-4 border-r">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStrategyTypeColor(strategy.strategy_type)}`}>
-                                  {getStrategyTypeDisplayName(strategy.strategy_type)}
-                                </span>
-                              </td>
-                              <td className="p-4 border-r">{strategy.portfolio_name}</td>
-                              
-                              <td className="p-4 border-r">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  strategyState.isActive
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {strategyState.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                              </td>
-                              <td className="p-4 text-center">
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={strategyState.isActive}
-                                    onChange={() => toggleStrategyState(strategy.id)}
-                                    disabled={loading}
-                                    className="sr-only peer"
-                                  />
-                                  <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#41748D] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
-                                </label>
-                              </td>
-                            </tr>
+  <td className="p-4 border-r font-medium">{strategy.name}</td>
+  <td className="p-4 border-r">
+    <span className="bg-gray-100 px-2 py-1 rounded text-sm">
+      {strategy.symbol}
+    </span>
+  </td>
+  <td className="p-4 border-r">
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStrategyTypeColor(strategy.strategy_type)}`}>
+      {getStrategyTypeDisplayName(strategy.strategy_type)}
+    </span>
+  </td>
+  <td className="p-4 border-r">{strategy.portfolio_name}</td>
+  <td className="p-4 border-r">
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+      strategyState.isActive
+        ? 'bg-green-100 text-green-800' 
+        : 'bg-red-100 text-red-800'
+    }`}>
+      {strategyState.isActive ? 'Active' : 'Inactive'}
+    </span>
+  </td>
+  <td className="p-4 border-r">
+  {formatDate(strategy.last_executed)}
+</td>
+  <td className="p-4 text-center border-r">
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={strategyState.isActive}
+        onChange={() => toggleStrategyState(strategy.id)}
+        disabled={loading}
+        className="sr-only peer"
+      />
+      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#41748D] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+    </label>
+  </td>
+  <td className="p-4 text-center">
+    <button 
+      onClick={() => confirmDelete(strategy.id, strategy.name)}
+      className="text-red-500 hover:text-red-700"
+      disabled={loading}
+      aria-label="Delete strategy"
+    >
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-200" 
+  viewBox="0 0 20 20" 
+  fill="currentColor"
+>
+  <path 
+    fillRule="evenodd" 
+    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" 
+    clipRule="evenodd" 
+  />
+</svg>
+    </button>
+  </td>
+</tr>
                           );
                         })}
                       </tbody>

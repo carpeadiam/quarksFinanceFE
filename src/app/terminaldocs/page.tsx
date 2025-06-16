@@ -81,7 +81,7 @@ const terminalDocs: TerminalDocSection[] = [
       {
         title: 'Strategy Commands',
         commands: [
-          { name: 'STRATEGY CREATE', syntax: 'STRATEGY CREATE name=<name> symbol=<symbol> type=<MOMENTUM|BOLLINGER|MACROSS> [params...]', description: 'Create a new trading strategy with specified parameters' },
+          { name: 'STRATEGY CREATE', syntax: 'STRATEGY CREATE name=<name> symbol=<symbol> type=<MOMENTUM|BOLLINGER|MACROSS|...> [params...]', description: 'Create a new trading strategy with specified parameters' },
           { name: 'STRATEGY LIST', syntax: 'STRATEGY LIST', description: 'List all available strategies' },
           { name: 'STRATEGY DELETE', syntax: 'STRATEGY DELETE id=<id>', description: 'Delete a strategy by ID' },
           { name: 'STRATEGY ENABLE', syntax: 'STRATEGY ENABLE id=<id>', description: 'Enable a strategy for automatic execution' },
@@ -91,14 +91,66 @@ const terminalDocs: TerminalDocSection[] = [
         ]
       },
       {
-        title: 'Strategy Parameters',
-        description: 'Different strategy types accept specific parameters for customization:',
-        parameters: [
-          { type: 'MOMENTUM', params: 'lookback_days=<14> threshold=<0.05>', description: 'Momentum strategy with lookback period and threshold' },
-          { type: 'BOLLINGER', params: 'window=<20> num_std=<2>', description: 'Bollinger Bands strategy with window size and standard deviations' },
-          { type: 'MACROSS', params: 'short_window=<50> long_window=<200>', description: 'Moving Average Crossover strategy with short and long windows' }
-        ]
-      }
+  "title": "Strategy Parameters",
+  "description": "Different strategy types accept specific parameters for customization:",
+  "parameters": [
+    {
+      "type": "MOMENTUM",
+      "params": "lookback_days=<14> threshold=<0.05>",
+      "description": "Momentum strategy with lookback period and threshold"
+    },
+    {
+      "type": "BOLLINGER",
+      "params": "window=<20> num_std=<2>",
+      "description": "Bollinger Bands strategy with window size and standard deviations"
+    },
+    {
+      "type": "MACROSS",
+      "params": "short_window=<50> long_window=<200>",
+      "description": "Moving Average Crossover strategy with short and long windows"
+    },
+    {
+      "type": "RSI",
+      "params": "window=<14> overbought=<70> oversold=<30>",
+      "description": "Relative Strength Index strategy with window size and overbought/oversold levels"
+    },
+    {
+      "type": "MACD",
+      "params": "fast=<12> slow=<26> signal=<9>",
+      "description": "Moving Average Convergence Divergence strategy with fast, slow and signal periods"
+    },
+    {
+      "type": "MEANREVERSION",
+      "params": "window=<20> z_threshold=<2>",
+      "description": "Mean Reversion strategy with window size and z-score threshold"
+    },
+    {
+      "type": "BREAKOUT",
+      "params": "window=<20> multiplier=<1.01>",
+      "description": "Breakout strategy with window size and resistance multiplier"
+    },
+    {
+      "type": "VOLUMESPIKE",
+      "params": "window=<20> multiplier=<2.5>",
+      "description": "Volume Spike strategy with window size and volume multiplier"
+    },
+    {
+      "type": "KELTNER",
+      "params": "window=<20> atr_multiplier=<2>",
+      "description": "Keltner Channels strategy with window size and ATR multiplier"
+    },
+    {
+      "type": "STOCHASTIC",
+      "params": "k_window=<14> d_window=<3> overbought=<80> oversold=<20>",
+      "description": "Stochastic Oscillator strategy with %K, %D periods and overbought/oversold levels"
+    },
+    {
+      "type": "PARABOLICSAR",
+      "params": "acceleration=<0.02> maximum=<0.2>",
+      "description": "Parabolic SAR strategy with acceleration factor and maximum value"
+    }
+  ]
+}
     ]
   },
   {
