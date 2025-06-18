@@ -138,6 +138,9 @@ export default function DiscordIntegrationPage() {
             <li>Go to any channel in your Discord server</li>
             <li>Type <code className="bg-gray-100 px-1 py-0.5 rounded">/verify --token-- </code></li>
             <li>The bot will confirm your account is linked</li>
+            <li>IMPORTANT : For most features, App Install is sufficient. 
+              For additional features like /fein , please use a Server Install
+            </li>
           </ol>
         </div>
       </div>
