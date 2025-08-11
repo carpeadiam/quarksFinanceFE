@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import FeatureShowcase from '../components/landing/FeatureShowcase';
-import { Mail, MapPin, Phone, Github, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { Mail, MapPin, Phone, Github, Twitter, Linkedin, Instagram, Play, X } from 'lucide-react';
 
 export default function LandingPage() {
   const [scrollY, setScrollY] = useState(0);
+  const [showAlert, setShowAlert] = useState(true);
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -17,6 +18,19 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen relative font-['Rubik']">
+      {/* Floating Alert */}
+      {showAlert && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3 animate-bounce">
+          <span className="text-sm font-medium">Hey! Scroll below to see the demo video 👇</span>
+          <button 
+            onClick={() => setShowAlert(false)}
+            className="hover:bg-white/20 rounded-full p-1 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Background SVG */}
       <div className="fixed inset-0 -z-10">
         <Image 
@@ -77,73 +91,114 @@ export default function LandingPage() {
       
       {/* Hero Section */}
       <section className="pt-20 pb-20 md:pt-30 md:pb-32 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
-          {/* Left Column - Text */}
-          <div className="space-y-8 max-w-xl">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl leading-tight text-blue-600 font-['JetBrains_Mono']">
-              <span className="font-normal font-['Rubik']">Trade with</span>
-              <br />
-              <span className="text-black font-normal">&lt;automated</span>
-              <br />
-              <span className="text-black font-normal">strategies&gt;</span>
-            </h1>
-            
-            <h2 className="text-2xl text-gray-700 font-bold">
-              Optimize your portfolio with adaptive algorithms
-            </h2>
-            
-            <p className="text-gray-600 text-xl">
-              QuarksFinance combines powerful backtesting and strategies to help you make smarter investment decisions in any market condition.
-            </p>
-            
-            <div className="pt-4">
-              <Link href="/login">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          </div>
-          
-          {/* Right Column - Icons Group */}
-          <div className="relative">
-            {/* Main Icons Group */}
-            <div className="flex items-center justify-center">
-              <div className="w-64 h-48 relative bottom-40">
-                <Image 
-                  src="/images/icons.svg" 
-                  alt="Trading Icons" 
-                  fill
-                  className="object-contain scale-150"
-                />
+        <div className="max-w-7xl mx-auto">
+          {/* Main Hero Content */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center mb-16">
+            {/* Left Column - Text */}
+            <div className="space-y-8 max-w-xl">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl leading-tight text-blue-600 font-['JetBrains_Mono']">
+                <span className="font-normal font-['Rubik']">Trade with</span>
+                <br />
+                <span className="text-black font-normal">&lt;automated</span>
+                <br />
+                <span className="text-black font-normal">strategies&gt;</span>
+              </h1>
+              
+              <h2 className="text-2xl text-gray-700 font-bold">
+                Optimize your portfolio with adaptive algorithms
+              </h2>
+              
+              <p className="text-gray-600 text-xl">
+                QuarksFinance combines powerful backtesting and strategies to help you make smarter investment decisions in any market condition.
+              </p>
+              
+              <div className="pt-4">
+                <Link href="/login">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
+                    Get Started
+                  </Button>
+                </Link>
               </div>
             </div>
             
-            {/* Bull and Bear Icons */}
-            <div className="absolute">
-                <div className="w-16 h-16 relative bottom-00 left-20">
+            {/* Right Column - Icons Group */}
+            <div className="relative">
+              {/* Main Icons Group */}
+              <div className="flex items-center justify-center">
+                <div className="w-64 h-48 relative bottom-40">
                   <Image 
-                    src="/images/bear.svg" 
-                    alt="Bear Icon" 
+                    src="/images/icons.svg" 
+                    alt="Trading Icons" 
                     fill
-                    className="object-contain scale-600"
+                    className="object-contain scale-150"
                   />
                 </div>
+              </div>
+              
+              {/* Bull and Bear Icons */}
+              <div className="absolute">
+                  <div className="w-16 h-16 relative bottom-00 left-20">
+                    <Image 
+                      src="/images/bear.svg" 
+                      alt="Bear Icon" 
+                      fill
+                      className="object-contain scale-600"
+                    />
+                  </div>
+              </div>
+              
+              <div className="absolute -top-5 -right-5">
+                
+                  <div className="w-14 h-14 relative top-60 right-50">
+                    <Image 
+                      src="/images/bull.svg" 
+                      alt="Bull Icon" 
+                      fill
+                      className="object-contain scale-600"
+                    />
+                  </div>
+                
+              </div>
+            </div>
+          </div>
+
+          {/* Demo Video Section */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-2 rounded-full text-sm font-medium mb-6">
+              <Play size={16} />
+              DEMO VIDEO
             </div>
             
-            <div className="absolute -top-5 -right-5">
-              
-                <div className="w-14 h-14 relative top-60 right-50">
-                  <Image 
-                    src="/images/bull.svg" 
-                    alt="Bull Icon" 
-                    fill
-                    className="object-contain scale-600"
-                  />
+            <h3 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+              See QuarksFinance in Action
+            </h3>
+            
+            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+              Watch how our advanced trading algorithms and backtesting tools can transform your investment strategy
+            </p>
+
+            {/* YouTube Video Embed */}
+            <div className="relative max-w-4xl mx-auto">
+              <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-100 to-indigo-200 p-1">
+                <div className="w-full h-full rounded-xl overflow-hidden bg-white">
+                  <iframe
+                    src="https://www.youtube.com/embed/5sj8BT6In0Q?rel=0&modestbranding=1&showinfo=0"
+                    title="QuarksFinance Demo Video"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
                 </div>
+              </div>
               
+              {/* Decorative elements */}
+              <div className="absolute -top-4 -left-4 w-8 h-8 bg-blue-500 rounded-full opacity-60 animate-pulse"></div>
+              <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-green-500 rounded-full opacity-60 animate-pulse delay-1000"></div>
+              <div className="absolute top-1/2 -left-8 w-4 h-4 bg-yellow-500 rounded-full opacity-40 animate-bounce"></div>
+              <div className="absolute top-1/4 -right-6 w-3 h-3 bg-purple-500 rounded-full opacity-40 animate-bounce delay-500"></div>
             </div>
-            
           </div>
         </div>
       </section>
