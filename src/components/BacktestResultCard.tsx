@@ -88,18 +88,85 @@ export default function BacktestResultCard({ result, strategyType = 'BOLLINGER' 
   // Get the symbol from the first transaction
   const symbol = result.transactions.length > 0 ? result.transactions[0].symbol : 'Stock';
 
-  // Map transactions to dates for simulation
+  // Debugging: Log the date formats to understand the mismatch
+  useEffect(() => {
+    console.log("BacktestResultCard - Price history dates:", Object.keys(result.price_history));
+    console.log("BacktestResultCard - Transaction timestamps:", result.transactions.map(t => t.timestamp));
+    
+    // Log the first few transactions with their parsed dates
+    result.transactions.slice(0, 5).forEach((t, index) => {
+      try {
+        const date = new Date(t.timestamp);
+        console.log(`Transaction ${index}: Raw=${t.timestamp}, Parsed=${date.toISOString()}, Key=${date.toISOString().split('T')[0]}`);
+      } catch (e) {
+        console.log(`Transaction ${index}: Raw=${t.timestamp}, Error parsing date`);
+      }
+    });
+    
+    // Log the first few price history entries
+    Object.keys(result.price_history).slice(0, 5).forEach((dateStr, index) => {
+      try {
+        const date = new Date(dateStr);
+        console.log(`Price history ${index}: Raw=${dateStr}, Parsed=${date.toISOString()}, Key=${date.toISOString().split('T')[0]}`);
+      } catch (e) {
+        console.log(`Price history ${index}: Raw=${dateStr}, Error parsing date`);
+      }
+    });
+  }, [result]);
+
+  // Add debugging for transaction data
+  useEffect(() => {
+    console.log("BacktestResultCard - Raw transaction data:", result.transactions);
+  }, [result.transactions]);
+    
+  // Debugging: Log the calculated total P/L
+  useEffect(() => {
+    const calculatedPL = result.transactions
+      .filter(t => t.type === 'SELL' && t.pl !== undefined)
+      .reduce((sum, t) => sum + (t.pl || 0), 0);
+    console.log("BacktestResultCard - Calculated Total P/L:", calculatedPL);
+  }, [result.transactions]);
+
+  // Map transactions to dates for simulation - improved version with better date handling
   const transactionsByDate = new Map<string, Transaction[]>();
   result.transactions.forEach(transaction => {
-    // Extract just the date part from the timestamp (YYYY-MM-DD)
-    const datePart = transaction.timestamp.split(' ')[0];
-    if (!transactionsByDate.has(datePart)) {
-      transactionsByDate.set(datePart, []);
+    // Parse the transaction timestamp
+    let transactionDate: Date;
+    try {
+      transactionDate = new Date(transaction.timestamp);
+      if (isNaN(transactionDate.getTime())) {
+        // If date is invalid, use a fallback
+        transactionDate = new Date();
+      }
+    } catch (e) {
+      // Fallback for any parsing errors
+      transactionDate = new Date();
     }
-    transactionsByDate.get(datePart)?.push(transaction);
+    
+    // Format the date to match the price history date format (YYYY-MM-DD)
+    const dateKey = transactionDate.toISOString().split('T')[0];
+    
+    if (!transactionsByDate.has(dateKey)) {
+      transactionsByDate.set(dateKey, []);
+    }
+    transactionsByDate.get(dateKey)?.push(transaction);
   });
 
-  // Prepare data for simulation chart
+  // Create a map of price history dates for efficient lookup
+  const priceHistoryDates = new Map<string, string>();
+  Object.keys(result.price_history).forEach(dateStr => {
+    try {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        const formattedDate = date.toISOString().split('T')[0];
+        priceHistoryDates.set(formattedDate, dateStr);
+      }
+    } catch (e) {
+      // Skip invalid dates
+    }
+  });
+
+  // Prepare data for simulation chart - updated point styling with better date matching
   const simulationData = {
     labels: dates.slice(0, simulationIndex + 1).map(date => formatDate(date)),
     datasets: [
@@ -112,12 +179,39 @@ export default function BacktestResultCard({ result, strategyType = 'BOLLINGER' 
         // Add point styling for transactions
         pointRadius: (ctx: any) => {
           const pointDate = dates[ctx.dataIndex];
-          const transactions = transactionsByDate.get(pointDate);
+          // Format the point date to match transaction date format
+          let pointDateKey: string;
+          try {
+            const date = new Date(pointDate);
+            if (isNaN(date.getTime())) {
+              pointDateKey = 'invalid-date';
+            } else {
+              pointDateKey = date.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            pointDateKey = 'invalid-date';
+          }
+          
+          // Check if there are transactions for this date
+          const transactions = transactionsByDate.get(pointDateKey);
           return transactions && transactions.length > 0 ? 6 : 0;
         },
         pointBackgroundColor: (ctx: any) => {
           const pointDate = dates[ctx.dataIndex];
-          const transactions = transactionsByDate.get(pointDate);
+          // Format the point date to match transaction date format
+          let pointDateKey: string;
+          try {
+            const date = new Date(pointDate);
+            if (isNaN(date.getTime())) {
+              pointDateKey = 'invalid-date';
+            } else {
+              pointDateKey = date.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            pointDateKey = 'invalid-date';
+          }
+          
+          const transactions = transactionsByDate.get(pointDateKey);
           if (transactions && transactions.length > 0) {
             // Use green for buy, red for sell
             // If there are both buy and sell on the same day, prioritize buy
@@ -128,7 +222,20 @@ export default function BacktestResultCard({ result, strategyType = 'BOLLINGER' 
         },
         pointBorderColor: (ctx: any) => {
           const pointDate = dates[ctx.dataIndex];
-          const transactions = transactionsByDate.get(pointDate);
+          // Format the point date to match transaction date format
+          let pointDateKey: string;
+          try {
+            const date = new Date(pointDate);
+            if (isNaN(date.getTime())) {
+              pointDateKey = 'invalid-date';
+            } else {
+              pointDateKey = date.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            pointDateKey = 'invalid-date';
+          }
+          
+          const transactions = transactionsByDate.get(pointDateKey);
           if (transactions && transactions.length > 0) {
             const hasBuy = transactions.some(t => t.type === 'BUY');
             return hasBuy ? '#059669' : '#DC2626';
@@ -143,7 +250,7 @@ export default function BacktestResultCard({ result, strategyType = 'BOLLINGER' 
 
   // Get transactions up to current simulation point
   const currentTransactions = result.transactions.filter(t => {
-    const transactionDate = t.timestamp.split(' ')[0];
+    const transactionDate = t.timestamp.split('T')[0];
     return dates.indexOf(transactionDate) <= simulationIndex;
   });
 
@@ -216,7 +323,20 @@ export default function BacktestResultCard({ result, strategyType = 'BOLLINGER' 
         callbacks: {
           afterLabel: function(context: any) {
             const pointDate = dates[context.dataIndex];
-            const transactions = transactionsByDate.get(pointDate);
+            // Format the point date to match transaction date format
+            let pointDateKey: string;
+            try {
+              const date = new Date(pointDate);
+              if (isNaN(date.getTime())) {
+                pointDateKey = 'invalid-date';
+              } else {
+                pointDateKey = date.toISOString().split('T')[0];
+              }
+            } catch (e) {
+              pointDateKey = 'invalid-date';
+            }
+            
+            const transactions = transactionsByDate.get(pointDateKey);
             if (transactions && transactions.length > 0) {
               return transactions.map(t => 
                 `${t.type}: ${t.quantity} @ ${t.price.toFixed(2)}`
@@ -792,7 +912,6 @@ export default function BacktestResultCard({ result, strategyType = 'BOLLINGER' 
 
         {/* Keep the existing tabs but update styling */}
         {activeTab === 'summary' && (
-          // ... existing summary tab content ...
           <div>
             <h3 className="text-2xl font-semibold mb-6 text-gray-900">Performance Summary</h3>
             
@@ -862,51 +981,122 @@ export default function BacktestResultCard({ result, strategyType = 'BOLLINGER' 
             
             <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
               <h4 className="text-lg font-medium mb-4 text-gray-800">Price History</h4>
-              <div className="h-64">
-                <Line 
-                  data={{
-                    labels: dates.map(date => formatDate(date)),
-                    datasets: [{
-                      label: 'Price',
-                      data: prices,
-                      borderColor: 'rgb(75, 85, 99)',
-                      backgroundColor: 'rgba(75, 85, 99, 0.5)',
-                      tension: 0.1,
-                    }]
-                  }} 
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                      y: {
-                        beginAtZero: false,
-                        grid: {
-                          color: 'rgba(229, 231, 235, 0.5)'
+              {dates.length > 0 ? (
+                <div className="h-64">
+                  <Line 
+                    data={{
+                      labels: dates.map(date => formatDate(date)),
+                      datasets: [{
+                        label: 'Price',
+                        data: prices,
+                        borderColor: 'rgb(75, 85, 99)',
+                        backgroundColor: 'rgba(75, 85, 99, 0.5)',
+                        tension: 0.1,
+                        // Add point styling for transactions in the summary chart as well
+                        pointRadius: (ctx: any) => {
+                          const pointDate = dates[ctx.dataIndex];
+                          // Format the point date to match transaction date format
+                          let pointDateKey: string;
+                          try {
+                            const date = new Date(pointDate);
+                            if (isNaN(date.getTime())) {
+                              pointDateKey = 'invalid-date';
+                            } else {
+                              pointDateKey = date.toISOString().split('T')[0];
+                            }
+                          } catch (e) {
+                            pointDateKey = 'invalid-date';
+                          }
+                          
+                          // Check if there are transactions for this date
+                          const transactions = transactionsByDate.get(pointDateKey);
+                          return transactions && transactions.length > 0 ? 6 : 0;
                         },
-                        ticks: {
-                          color: '#4B5563'
+                        pointBackgroundColor: (ctx: any) => {
+                          const pointDate = dates[ctx.dataIndex];
+                          // Format the point date to match transaction date format
+                          let pointDateKey: string;
+                          try {
+                            const date = new Date(pointDate);
+                            if (isNaN(date.getTime())) {
+                              pointDateKey = 'invalid-date';
+                            } else {
+                              pointDateKey = date.toISOString().split('T')[0];
+                            }
+                          } catch (e) {
+                            pointDateKey = 'invalid-date';
+                          }
+                          
+                          const transactions = transactionsByDate.get(pointDateKey);
+                          if (transactions && transactions.length > 0) {
+                            // Use green for buy, red for sell
+                            const hasBuy = transactions.some(t => t.type === 'BUY');
+                            return hasBuy ? '#059669' : '#DC2626';
+                          }
+                          return 'rgba(0, 0, 0, 0)';
+                        },
+                        pointBorderColor: (ctx: any) => {
+                          const pointDate = dates[ctx.dataIndex];
+                          // Format the point date to match transaction date format
+                          let pointDateKey: string;
+                          try {
+                            const date = new Date(pointDate);
+                            if (isNaN(date.getTime())) {
+                              pointDateKey = 'invalid-date';
+                            } else {
+                              pointDateKey = date.toISOString().split('T')[0];
+                            }
+                          } catch (e) {
+                            pointDateKey = 'invalid-date';
+                          }
+                          
+                          const transactions = transactionsByDate.get(pointDateKey);
+                          if (transactions && transactions.length > 0) {
+                            const hasBuy = transactions.some(t => t.type === 'BUY');
+                            return hasBuy ? '#059669' : '#DC2626';
+                          }
+                          return 'rgba(0, 0, 0, 0)';
+                        },
+                        pointBorderWidth: 2,
+                      }]
+                    }} 
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: false,
+                          grid: {
+                            color: 'rgba(229, 231, 235, 0.5)'
+                          },
+                          ticks: {
+                            color: '#4B5563'
+                          }
+                        },
+                        x: {
+                          grid: {
+                            color: 'rgba(229, 231, 235, 0.5)'
+                          },
+                          ticks: {
+                            color: '#4B5563',
+                            maxRotation: 45,
+                            minRotation: 45
+                          }
                         }
                       },
-                      x: {
-                        grid: {
-                          color: 'rgba(229, 231, 235, 0.5)'
-                        },
-                        ticks: {
-                          color: '#4B5563',
-                          maxRotation: 45,
-                          minRotation: 45
-                        }
-                      }
-                    },
-                  }}
-                />
-              </div>
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No price history data available
+                </div>
+              )}
             </div>
           </div>
         )}
         
         {activeTab === 'transactions' && (
-          // ... existing transactions tab content ...
           <div>
             <h3 className="text-2xl font-semibold mb-6 text-gray-900">Transaction History</h3>
             
