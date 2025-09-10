@@ -413,9 +413,9 @@ const EditAlgorithmPage: React.FC = () => {
                       Run Backtest
                     </Button>
                   </Link>
-                  <Link href={`/custom-algorithms/${algorithmId}/optimize`} className="block">
+                  <Link href={`/custom-algorithms/${algorithmId}/strategy`} className="block">
                     <Button variant="outline" className="w-full">
-                      Optimize Parameters
+                      strategy
                     </Button>
                   </Link>
                 </CardContent>
