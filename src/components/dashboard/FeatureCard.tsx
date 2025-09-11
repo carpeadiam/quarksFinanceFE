@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import Link from 'next/link';
-
 interface FeatureCardProps {
   title: string;
   icon: string;
@@ -17,19 +16,19 @@ export default function FeatureCard({ title, icon, href, color }: FeatureCardPro
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <Link href={href}>
-        <div className={`${colorMap[color]} bg-white overflow-hidden rounded-lg p-2 flex items-center justify-center aspect-[4/3]`}>
+        <div className={`${colorMap[color]} bg-white overflow-hidden`}>
           <Image 
             src={icon} 
             alt={title} 
-            width={140} 
-            height={105} 
-            className="object-contain w-full h-full" 
+            width={160} 
+            height={120} 
+            className="w-full h-full object-contain" 
           />
         </div>
       </Link>
-      <h2 className="text-center text-black mt-2 px-1 text-sm md:text-base" style={{ fontFamily: 'Rubik, sans-serif' }}>{title}</h2>
+      <h2 className="text-center text-black mt-2" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '20px' }}>{title}</h2>
     </div>
   );
 }

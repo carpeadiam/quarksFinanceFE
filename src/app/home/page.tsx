@@ -52,7 +52,7 @@ export default function Home() {
       <Navbar />
       <Link href="/home" className="block ml-4 mb-4 text-black" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '20px' }}>Home</Link>
       
-      <div className="container mx-auto">
+      <div className="container mx-auto px-4 lg:px-8">
         <h1 className="sr-only">QuarksLab Dashboard</h1>
         <FeatureGrid />
       </div>
