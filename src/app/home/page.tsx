@@ -5,9 +5,11 @@ import FeatureGrid from '../../components/dashboard/FeatureGrid';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
 import AudioPlayer from '../../components/ui/AudioPlayer';
+import { TerminalInterface } from '@/src/components/ui';
 
 export default function Home() {
   const [showAudioPlayer, setShowAudioPlayer] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
   const [lyricsData, setLyricsData] = useState('');
   const [keyPressTime, setKeyPressTime] = useState<number | null>(null);
   
@@ -29,6 +31,10 @@ export default function Home() {
         setTimeout(() => {
           setKeyPressTime(null);
         }, 5000);
+      }
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
       }
     };
     
@@ -65,6 +71,10 @@ export default function Home() {
           onClose={() => setShowAudioPlayer(false)}
         />
       )}
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </main>
   );
 }
