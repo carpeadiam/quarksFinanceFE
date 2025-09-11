@@ -50,9 +50,9 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
-      <Link href="/home" className="mt-4 block ml-6 text-black text-xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>Home</Link>
+      <Link href="/home" className="block ml-4 mb-4 text-black" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '20px' }}>Home</Link>
       
-      <div className="container mx-auto px-40 py-10">
+      <div className="container mx-auto">
         <h1 className="sr-only">QuarksLab Dashboard</h1>
         <FeatureGrid />
       </div>

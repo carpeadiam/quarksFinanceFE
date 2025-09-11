@@ -35,12 +35,12 @@ export default function AuthButtons() {
 
   if (isLoggedIn) {
     return (
-      <div className="flex items-center gap-4">
-        <span className="text-black" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '17px' }}>{username}</span>
+      <div className="flex items-center gap-2 md:gap-4">
+        <span className="text-black text-sm md:text-base" style={{ fontFamily: 'Rubik, sans-serif' }}>{username}</span>
         <button 
           onClick={handleLogout}
-          className="px-4 py-2 text-black border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
-          style={{ fontFamily: 'Rubik, sans-serif', fontSize: '17px'}}>
+          className="px-3 py-1 md:px-4 md:py-2 text-black border border-gray-300 rounded-full hover:bg-gray-100 transition-colors text-sm md:text-base"
+          style={{ fontFamily: 'Rubik, sans-serif' }}>
           Log out
         </button>
       </div>
@@ -48,17 +48,17 @@ export default function AuthButtons() {
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2 md:gap-4">
       <Link 
         href="/login"
-        className="px-4 py-2 text-black border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
-        style={{ fontFamily: 'Rubik, sans-serif', fontSize: '17px' }}>
+        className="px-3 py-1 md:px-4 md:py-2 text-black border border-gray-300 rounded-full hover:bg-gray-100 transition-colors text-sm md:text-base"
+        style={{ fontFamily: 'Rubik, sans-serif' }}>
         Sign up
       </Link>
       <Link 
         href="/login"
-        className="px-4 py-2 text-black border border-gray-300 rounded-full hover:bg-gray-100 transition-colors"
-        style={{ fontFamily: 'Rubik, sans-serif', fontSize: '17px' }}>
+        className="px-3 py-1 md:px-4 md:py-2 text-black border border-gray-300 rounded-full hover:bg-gray-100 transition-colors text-sm md:text-base"
+        style={{ fontFamily: 'Rubik, sans-serif' }}>
         Log in
       </Link>
     </div>
