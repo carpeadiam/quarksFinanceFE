@@ -31,6 +31,7 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
   const [theme, setTheme] = useState<'green' | 'blue' | 'amber' | 'purple' | 'white' | 'light' | 'retro' | 'ocean' | 'sunset'>('green');
   const [showTimestamps, setShowTimestamps] = useState(false);
   const [continuationMode, setContinuationMode] = useState<{ command: string; prompt: string } | null>(null);
+  const [currentPortfolioId, setCurrentPortfolioId] = useState<string | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -353,6 +354,71 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
     return loadCommands.some(loadCmd => upperCmd.startsWith(loadCmd));
   };
 
+  const loadPortfolioFromBackend = async (portfolioId: string): Promise<{ success: boolean; data?: any; error?: string }> => {
+    if (!token) {
+      return { success: false, error: 'Authentication token missing' };
+    }
+
+    try {
+      const response = await fetch(`https://thecodeworks.in/quarksfinance/api/portfolios/${portfolioId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-access-token': token,
+        }
+      });
+
+      if (!response.ok) {
+        return { success: false, error: `HTTP ${response.status}` };
+      }
+
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: 'Network error or timeout' };
+    }
+  };
+
+  const handleLoadPortfolio = async (cmd: string): Promise<boolean> => {
+    // Extract ID from command like "LOAD PORTFOLIO id=96"
+    const match = cmd.match(/id=([^\s]+)/i);
+    if (!match) {
+      addOutput('Error: Missing portfolio ID. Use: LOAD PORTFOLIO id=<id>', 'error');
+      return false;
+    }
+
+    const portfolioId = match[1];
+    const result = await loadPortfolioFromBackend(portfolioId);
+
+    if (result.success && result.data) {
+      setCurrentPortfolioId(portfolioId);
+      const portfolioName = result.data.name || result.data.portfolio_name || 'Unknown';
+      addOutput(`Loaded portfolio '${portfolioName}' (ID: ${portfolioId}) from backend.`, 'success');
+      return true;
+    } else {
+      addOutput(`Error: Could not load portfolio ID ${portfolioId} (${result.error}).`, 'error');
+      return false;
+    }
+  };
+
+  const handleViewPortfolio = async (): Promise<void> => {
+    if (!currentPortfolioId) {
+      addOutput('No portfolio loaded. Use LOAD PORTFOLIO first.', 'error');
+      return;
+    }
+
+    const result = await loadPortfolioFromBackend(currentPortfolioId);
+    
+    if (result.success && result.data) {
+      addOutput('--- Portfolio Details ---', 'info');
+      const formattedData = formatData(result.data);
+      addOutput(formattedData, 'output');
+      addOutput('-------------------------', 'info');
+    } else {
+      addOutput(`Error: Could not fetch portfolio details (${result.error}).`, 'error');
+    }
+  };
+
   const handleLocalCommand = (cmd: string): boolean => {
     const parts = cmd.trim().toLowerCase().split(' ');
     const baseCmd = parts[0];
@@ -476,7 +542,8 @@ Remote Commands:
   Auth Token: ${token ? 'present' : 'missing'}
   Output Lines: ${output.length}
   Command History: ${commandHistory.length}
-  Continuation Mode: ${continuationMode ? 'active' : 'inactive'}`, 'info');
+  Continuation Mode: ${continuationMode ? 'active' : 'inactive'}
+  Current Portfolio: ${currentPortfolioId || 'none'}`, 'info');
         return true;
         
       case 'reset':
@@ -485,6 +552,7 @@ Remote Commands:
         setMaxHistory(100);
         setShowTimestamps(false);
         setContinuationMode(null);
+        setCurrentPortfolioId(null);
         addOutput('Terminal reset to default settings.', 'success');
         return true;
         
@@ -494,9 +562,23 @@ Remote Commands:
   };
 
   const executeRemoteCommand = async (cmd: string) => {
+    // Handle special portfolio commands
+    const upperCmd = cmd.trim().toUpperCase();
+    
+    if (upperCmd.startsWith('LOAD PORTFOLIO')) {
+      const success = await handleLoadPortfolio(cmd);
+      return success;
+    }
+    
+    if (upperCmd === 'VIEW PORTFOLIO') {
+      await handleViewPortfolio();
+      return true;
+    }
+
+    // Handle other remote commands
     if (!token) {
       addOutput('Error: Authentication token missing. Please login first.', 'error');
-      return;
+      return false;
     }
 
     try {
@@ -514,6 +596,7 @@ Remote Commands:
       if (response.ok && data) {
         const formattedResult = formatData(data.result || data);
         addOutput(formattedResult, 'output');
+        return true;
       } else {
         const errorMsg = data.message || 'Something went wrong';
         addOutput(`Error: ${errorMsg}`, 'error');
@@ -523,6 +606,7 @@ Remote Commands:
         if (suggestions.length > 0) {
           addOutput(`Did you mean: ${suggestions.join(', ')}?`, 'info');
         }
+        return false;
       }
     } catch (err) {
       addOutput('Error: Failed to connect to server. Check your connection.', 'error');
@@ -532,6 +616,7 @@ Remote Commands:
       if (suggestions.length > 0) {
         addOutput(`If this was a command typo, did you mean: ${suggestions.join(', ')}?`, 'info');
       }
+      return false;
     }
   };
 
@@ -543,16 +628,16 @@ Remote Commands:
       if (!cmd) continue;
       
       // Add command to output
-      addOutput(`QuarkScript> ${cmd}`, 'command');
+      addOutput(`${getPromptText()} ${cmd}`, 'command');
       
       // Check if it's a local command
       if (handleLocalCommand(cmd)) {
         continue;
       }
       
-      // Check if it's a load command and needs continuation
-      if (isLoadCommand(cmd) && i === commands.length - 1) {
-        // This is the last command and it's a load command
+      // Check if it's a load command and needs continuation (only for single commands, not in multi-command)
+      if (isLoadCommand(cmd) && i === commands.length - 1 && commands.length === 1) {
+        // This is the last command and it's a load command, and it's the only command
         const loadType = cmd.toUpperCase().includes('PORTFOLIO') ? 'PORTFOLIO' : 'WATCHLIST';
         setContinuationMode({
           command: cmd,
@@ -677,6 +762,9 @@ Remote Commands:
   const getPromptText = () => {
     if (continuationMode) {
       return continuationMode.prompt;
+    }
+    if (currentPortfolioId) {
+      return `PORTFOLIO id=${currentPortfolioId}>`;
     }
     return 'QuarkScript>';
   };
