@@ -790,7 +790,9 @@ Remote Commands:
                 aria-label="Terminal command input"
                 autoComplete="off"
                 spellCheck="false"
-                placeholder={continuationMode ? "Enter ID..." : ""}
+                placeholder={continuationMode ? 
+                  (continuationMode.type === 'load' ? "Enter ID..." : "Enter command...") : 
+                  ""}
               />
             </div>
           </div>
