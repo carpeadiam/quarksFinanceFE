@@ -28,16 +28,76 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
   const [isResizing, setIsResizing] = useState(false);
   const [fontSize, setFontSize] = useState(14);
   const [maxHistory, setMaxHistory] = useState(100);
-  const [theme, setTheme] = useState<'green' | 'blue' | 'amber' | 'purple'>('green');
+  const [theme, setTheme] = useState<'green' | 'blue' | 'amber' | 'purple' | 'white' | 'light' | 'retro' | 'ocean' | 'sunset'>('green');
   const [showTimestamps, setShowTimestamps] = useState(false);
+  const [continuationMode, setContinuationMode] = useState<{ command: string; prompt: string } | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const themes = {
-    green: { primary: 'text-green-400', bg: 'bg-gray-900', accent: 'text-green-300' },
-    blue: { primary: 'text-blue-400', bg: 'bg-slate-900', accent: 'text-blue-300' },
-    amber: { primary: 'text-amber-400', bg: 'bg-stone-900', accent: 'text-amber-300' },
-    purple: { primary: 'text-purple-400', bg: 'bg-gray-900', accent: 'text-purple-300' }
+    green: { 
+      primary: 'text-green-400', 
+      bg: 'bg-gray-900', 
+      accent: 'text-green-300',
+      header: 'bg-gray-800',
+      border: 'border-gray-700'
+    },
+    blue: { 
+      primary: 'text-blue-400', 
+      bg: 'bg-slate-900', 
+      accent: 'text-blue-300',
+      header: 'bg-slate-800',
+      border: 'border-slate-700'
+    },
+    amber: { 
+      primary: 'text-amber-400', 
+      bg: 'bg-stone-900', 
+      accent: 'text-amber-300',
+      header: 'bg-stone-800',
+      border: 'border-stone-700'
+    },
+    purple: { 
+      primary: 'text-purple-400', 
+      bg: 'bg-gray-900', 
+      accent: 'text-purple-300',
+      header: 'bg-gray-800',
+      border: 'border-gray-700'
+    },
+    white: {
+      primary: 'text-gray-800',
+      bg: 'bg-white',
+      accent: 'text-blue-600',
+      header: 'bg-gray-100',
+      border: 'border-gray-300'
+    },
+    light: {
+      primary: 'text-slate-700',
+      bg: 'bg-slate-50',
+      accent: 'text-indigo-600',
+      header: 'bg-slate-200',
+      border: 'border-slate-300'
+    },
+    retro: {
+      primary: 'text-orange-400',
+      bg: 'bg-black',
+      accent: 'text-yellow-300',
+      header: 'bg-gray-900',
+      border: 'border-orange-600'
+    },
+    ocean: {
+      primary: 'text-cyan-300',
+      bg: 'bg-slate-800',
+      accent: 'text-teal-300',
+      header: 'bg-slate-700',
+      border: 'border-cyan-500'
+    },
+    sunset: {
+      primary: 'text-pink-300',
+      bg: 'bg-purple-900',
+      accent: 'text-orange-300',
+      header: 'bg-purple-800',
+      border: 'border-pink-500'
+    }
   };
 
   // Remote commands for QuarkScript based on actual API
@@ -61,6 +121,9 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
     'GENERATE ADVICE',
     'EXIT'
   ];
+
+  // Commands that require continuation
+  const loadCommands = ['LOAD PORTFOLIO', 'LOAD WATCHLIST'];
 
   // Levenshtein distance for command suggestions
   const getLevenshteinDistance = (str1: string, str2: string): number => {
@@ -105,9 +168,14 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
   // Check for auth token on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Using in-memory storage instead of localStorage
-      const storedToken = 'quarksFinanceToken'; // Replace with actual token retrieval logic
-      setToken(storedToken);
+      try {
+        const storedToken = localStorage.getItem('quarksFinanceToken');
+        if (storedToken) {
+          setToken(storedToken);
+        }
+      } catch (error) {
+        console.warn('Could not access localStorage:', error);
+      }
     }
   }, []);
 
@@ -245,6 +313,46 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
     return String(data);
   };
 
+  const splitCommands = (input: string): string[] => {
+    // Split by semicolon but preserve semicolons inside quotes
+    const commands: string[] = [];
+    let currentCommand = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    
+    for (let i = 0; i < input.length; i++) {
+      const char = input[i];
+      
+      if ((char === '"' || char === "'") && !inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+        currentCommand += char;
+      } else if (char === quoteChar && inQuotes) {
+        inQuotes = false;
+        quoteChar = '';
+        currentCommand += char;
+      } else if (char === ';' && !inQuotes) {
+        if (currentCommand.trim()) {
+          commands.push(currentCommand.trim());
+        }
+        currentCommand = '';
+      } else {
+        currentCommand += char;
+      }
+    }
+    
+    if (currentCommand.trim()) {
+      commands.push(currentCommand.trim());
+    }
+    
+    return commands;
+  };
+
+  const isLoadCommand = (cmd: string): boolean => {
+    const upperCmd = cmd.trim().toUpperCase();
+    return loadCommands.some(loadCmd => upperCmd.startsWith(loadCmd));
+  };
+
   const handleLocalCommand = (cmd: string): boolean => {
     const parts = cmd.trim().toLowerCase().split(' ');
     const baseCmd = parts[0];
@@ -276,7 +384,11 @@ Strategy Management:
 Analysis:
   GENERATE ADVICE symbol=<symbol>
 Other:
-  EXIT`, 'info');
+  EXIT
+
+Multi-Command Support:
+  Use semicolons (;) to execute multiple commands in one line
+  Example: HELP; STATUS; CLEAR`, 'info');
         } else {
           addOutput(`Available Commands:
         
@@ -285,7 +397,7 @@ Local Commands:
   HELP REMOTE             - Show QuarkScript API commands
   CLEAR, CLS             - Clear terminal output
   HISTORY [limit]        - Show command history (optional limit)
-  THEME <color>          - Change theme (green, blue, amber, purple)
+  THEME <color>          - Change theme (green, blue, amber, purple, white, light, retro, ocean, sunset)
   FONTSIZE <size>        - Change font size (10-24)
   TIMESTAMP              - Toggle timestamp display
   STATUS                 - Show terminal status
@@ -296,6 +408,10 @@ Accessibility:
   Shift+T                - Toggle terminal
   Escape                 - Minimize terminal
   Arrow Up/Down          - Navigate command history
+  
+Multi-Command Support:
+  Use semicolons (;) to execute multiple commands in one line
+  Example: HELP; STATUS; CLEAR
   
 Remote Commands:
   All other commands are sent to the QuarkScript server.`, 'info');
@@ -332,7 +448,7 @@ Remote Commands:
           setTheme(newTheme);
           addOutput(`Theme changed to: ${newTheme}`, 'success');
         } else {
-          addOutput('Available themes: green, blue, amber, purple', 'error');
+          addOutput('Available themes: green, blue, amber, purple, white, light, retro, ocean, sunset', 'error');
         }
         return true;
         
@@ -359,7 +475,8 @@ Remote Commands:
   Timestamps: ${showTimestamps ? 'enabled' : 'disabled'}
   Auth Token: ${token ? 'present' : 'missing'}
   Output Lines: ${output.length}
-  Command History: ${commandHistory.length}`, 'info');
+  Command History: ${commandHistory.length}
+  Continuation Mode: ${continuationMode ? 'active' : 'inactive'}`, 'info');
         return true;
         
       case 'reset':
@@ -367,6 +484,7 @@ Remote Commands:
         setFontSize(14);
         setMaxHistory(100);
         setShowTimestamps(false);
+        setContinuationMode(null);
         addOutput('Terminal reset to default settings.', 'success');
         return true;
         
@@ -375,30 +493,11 @@ Remote Commands:
     }
   };
 
-  const executeCommand = async () => {
-    if (!command.trim()) return;
-
-    // Add command to history
-    setCommandHistory(prev => [...prev, command]);
-    setHistoryIndex(-1);
-    
-    // Add command to output
-    addOutput(`QuarkScript> ${command}`, 'command');
-    
-    // Check if it's a local command
-    if (handleLocalCommand(command)) {
-      setCommand('');
-      return;
-    }
-    
-    // Check auth for remote commands
+  const executeRemoteCommand = async (cmd: string) => {
     if (!token) {
       addOutput('Error: Authentication token missing. Please login first.', 'error');
-      setCommand('');
       return;
     }
-
-    setLoading(true);
 
     try {
       const response = await fetch('https://thecodeworks.in/quarksfinance/api/terminal', {
@@ -407,7 +506,7 @@ Remote Commands:
           'Content-Type': 'application/json',
           'x-access-token': token,
         },
-        body: JSON.stringify({ command })
+        body: JSON.stringify({ command: cmd })
       });
 
       const data = await response.json();
@@ -420,7 +519,7 @@ Remote Commands:
         addOutput(`Error: ${errorMsg}`, 'error');
         
         // Suggest similar commands if it might be a typo
-        const suggestions = getSuggestedCommands(command);
+        const suggestions = getSuggestedCommands(cmd);
         if (suggestions.length > 0) {
           addOutput(`Did you mean: ${suggestions.join(', ')}?`, 'info');
         }
@@ -429,14 +528,72 @@ Remote Commands:
       addOutput('Error: Failed to connect to server. Check your connection.', 'error');
       
       // Still provide suggestions for potential command typos
-      const suggestions = getSuggestedCommands(command);
+      const suggestions = getSuggestedCommands(cmd);
       if (suggestions.length > 0) {
         addOutput(`If this was a command typo, did you mean: ${suggestions.join(', ')}?`, 'info');
       }
-    } finally {
+    }
+  };
+
+  const executeCommands = async (commands: string[]) => {
+    setLoading(true);
+    
+    for (let i = 0; i < commands.length; i++) {
+      const cmd = commands[i].trim();
+      if (!cmd) continue;
+      
+      // Add command to output
+      addOutput(`QuarkScript> ${cmd}`, 'command');
+      
+      // Check if it's a local command
+      if (handleLocalCommand(cmd)) {
+        continue;
+      }
+      
+      // Check if it's a load command and needs continuation
+      if (isLoadCommand(cmd) && i === commands.length - 1) {
+        // This is the last command and it's a load command
+        const loadType = cmd.toUpperCase().includes('PORTFOLIO') ? 'PORTFOLIO' : 'WATCHLIST';
+        setContinuationMode({
+          command: cmd,
+          prompt: `${cmd} id=<id> >`
+        });
+        addOutput(`${cmd} id=<id> >`, 'info');
+        setLoading(false);
+        return;
+      }
+      
+      // Execute remote command
+      await executeRemoteCommand(cmd);
+    }
+    
+    setLoading(false);
+  };
+
+  const executeCommand = async () => {
+    if (!command.trim()) return;
+
+    // Add command to history
+    setCommandHistory(prev => [...prev, command]);
+    setHistoryIndex(-1);
+    
+    // Handle continuation mode
+    if (continuationMode) {
+      const fullCommand = `${continuationMode.command} ${command}`;
+      addOutput(`${continuationMode.prompt.replace('<id>', command)}`, 'command');
+      setContinuationMode(null);
+      setLoading(true);
+      await executeRemoteCommand(fullCommand);
       setLoading(false);
       setCommand('');
+      return;
     }
+    
+    // Split commands by semicolon and execute
+    const commands = splitCommands(command);
+    await executeCommands(commands);
+    
+    setCommand('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -484,6 +641,13 @@ Remote Commands:
         }
       }
     }
+
+    // Escape key cancels continuation mode
+    if (e.key === 'Escape' && continuationMode) {
+      e.stopPropagation();
+      setContinuationMode(null);
+      addOutput('Continuation mode cancelled.', 'info');
+    }
   };
 
   const startResize = (e: React.MouseEvent) => {
@@ -494,9 +658,9 @@ Remote Commands:
   const getOutputColor = (type: TerminalOutput['type']) => {
     switch (type) {
       case 'command': return currentTheme.accent;
-      case 'error': return 'text-red-400';
-      case 'success': return 'text-green-400';
-      case 'info': return 'text-cyan-400';
+      case 'error': return theme === 'white' || theme === 'light' ? 'text-red-600' : 'text-red-400';
+      case 'success': return theme === 'white' || theme === 'light' ? 'text-green-600' : 'text-green-400';
+      case 'info': return theme === 'white' || theme === 'light' ? 'text-blue-600' : 'text-cyan-400';
       default: return currentTheme.primary;
     }
   };
@@ -510,13 +674,20 @@ Remote Commands:
     });
   };
 
+  const getPromptText = () => {
+    if (continuationMode) {
+      return continuationMode.prompt;
+    }
+    return 'QuarkScript>';
+  };
+
   if (!isVisible) return null;
 
   return (
     <div 
-      className={`fixed bottom-0 left-0 right-0 z-50 border-t border-gray-700 shadow-2xl ${isMinimized ? 'h-10' : ''}`}
+      className={`fixed bottom-0 left-0 right-0 z-50 ${currentTheme.border} border-t shadow-2xl ${isMinimized ? 'h-10' : ''}`}
       style={{
-        backgroundColor: '#1e1e1e',
+        backgroundColor: theme === 'white' || theme === 'light' ? '#ffffff' : '#1e1e1e',
         height: isMinimized ? '2.5rem' : `${height}px`
       }}
       role="dialog"
@@ -526,39 +697,39 @@ Remote Commands:
       {/* Resize Handle */}
       {!isMinimized && (
         <div
-          className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-gray-600 transition-colors"
+          className={`absolute top-0 left-0 right-0 h-2 cursor-ns-resize hover:${theme === 'white' || theme === 'light' ? 'bg-gray-300' : 'bg-gray-600'} transition-colors`}
           onMouseDown={startResize}
           role="separator"
           aria-label="Resize terminal"
         >
           <div className="flex justify-center pt-1">
-            <div className="w-8 h-1 bg-gray-600 rounded-full"></div>
+            <div className={`w-8 h-1 ${theme === 'white' || theme === 'light' ? 'bg-gray-400' : 'bg-gray-600'} rounded-full`}></div>
           </div>
         </div>
       )}
       
       {/* Terminal Header */}
-      <div className="flex justify-between items-center px-4 py-2 bg-gray-800 border-b border-gray-700 mt-2">
+      <div className={`flex justify-between items-center px-4 py-2 ${currentTheme.header} ${currentTheme.border} border-b mt-2`}>
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5" role="group" aria-label="Window controls">
             <div className="w-3 h-3 bg-red-500 rounded-full" aria-label="Close"></div>
             <div className="w-3 h-3 bg-yellow-500 rounded-full" aria-label="Minimize"></div>
             <div className="w-3 h-3 bg-green-500 rounded-full" aria-label="Maximize"></div>
           </div>
-          <span className="text-gray-300 ml-2 text-sm">quarks-terminal-v2</span>
+          <span className={`ml-2 text-sm ${theme === 'white' || theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>quarks-terminal-v2</span>
           <span className={`text-xs ${currentTheme.accent}`}>({theme})</span>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={() => setIsMinimized(!isMinimized)}
-            className="text-gray-400 hover:text-white text-sm"
+            className={`${theme === 'white' || theme === 'light' ? 'text-gray-600 hover:text-black' : 'text-gray-400 hover:text-white'} text-sm`}
             aria-label={isMinimized ? "Restore terminal" : "Minimize terminal"}
           >
             {isMinimized ? '□' : '−'}
           </button>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-sm"
+            className={`${theme === 'white' || theme === 'light' ? 'text-gray-600 hover:text-black' : 'text-gray-400 hover:text-white'} text-sm`}
             aria-label="Close terminal"
           >
             ×
@@ -587,7 +758,7 @@ Remote Commands:
                 aria-label={`Terminal output: ${item.type}`}
               >
                 {showTimestamps && (
-                  <span className="text-gray-500 text-xs mr-2">
+                  <span className={`${theme === 'white' || theme === 'light' ? 'text-gray-400' : 'text-gray-500'} text-xs mr-2`}>
                     [{formatTimestamp(item.timestamp)}]
                   </span>
                 )}
@@ -605,7 +776,7 @@ Remote Commands:
             )}
             
             <div className="flex items-center mt-2">
-              <span className={`${currentTheme.accent} mr-2`}>QuarkScript&gt;</span>
+              <span className={`${currentTheme.accent} mr-2`}>{getPromptText()}</span>
               <input
                 ref={inputRef}
                 type="text"
@@ -619,6 +790,7 @@ Remote Commands:
                 aria-label="Terminal command input"
                 autoComplete="off"
                 spellCheck="false"
+                placeholder={continuationMode ? "Enter ID..." : ""}
               />
             </div>
           </div>
