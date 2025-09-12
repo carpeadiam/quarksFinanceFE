@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getAdvice } from '../../services/api';
 import AdviceCard from '../../components/AdviceCard';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
+import { TerminalInterface } from '@/src/components/ui';
 
 
 
@@ -129,9 +130,27 @@ interface AdviceData {
   const [advice, setAdvice] = useState<AdviceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showTerminal, setShowTerminal] = useState(false);
   const router = useRouter();
   // Add HTMLDivElement type to the ref
   const adviceCardRef = useRef<HTMLDivElement>(null);
+
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -609,6 +628,11 @@ currentY = drawStrategy(
         )}
       </div>
     </div>
+    
+    <TerminalInterface 
+      isVisible={showTerminal}
+      onClose={() => setShowTerminal(false)}
+    />
   </div>
   );
 }

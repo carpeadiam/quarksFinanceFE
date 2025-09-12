@@ -5,7 +5,7 @@ import FeatureGrid from '../../components/dashboard/FeatureGrid';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
 import AudioPlayer from '../../components/ui/AudioPlayer';
-import { TerminalInterface } from '@/src/components/ui';
+import { TerminalInterface } from '../../components/ui';
 
 export default function Home() {
   const [showAudioPlayer, setShowAudioPlayer] = useState(false);
@@ -21,7 +21,7 @@ export default function Home() {
       .catch(error => console.error('Error loading lyrics:', error));
     
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Ctrl+Shift+Q
+      // Check for Ctrl+Shift+Q (audio player)
       if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
         e.preventDefault();
         const now = Date.now();
@@ -32,6 +32,8 @@ export default function Home() {
           setKeyPressTime(null);
         }, 5000);
       }
+      
+      // Check for Shift+T (terminal)
       if (e.shiftKey && e.key === 'T') {
         e.preventDefault();
         setShowTerminal(true);
@@ -56,9 +58,9 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
-      <Link href="/home" className="mt-4 block ml-6 text-black text-xl" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '23px' }}>Home</Link>
+      <Link href="/home" className="mt-4 block ml-4 text-black md:ml-6" style={{ fontFamily: 'Rubik, sans-serif', fontSize: '20px' }}>Home</Link>
       
-      <div className="container mx-auto px-40 py-10">
+      <div className="container mx-auto px-4 py-8 md:py-10 md:px-6 lg:px-40">
         <h1 className="sr-only">QuarksLab Dashboard</h1>
         <FeatureGrid />
       </div>
@@ -71,6 +73,7 @@ export default function Home() {
           onClose={() => setShowAudioPlayer(false)}
         />
       )}
+      
       <TerminalInterface 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
+import { TerminalInterface } from '../../components/ui';
 
 type SentimentAnalysisResult = {
   metadata?: {
@@ -65,6 +66,24 @@ export default function SentimentAnalysisPage() {
   const [analysisResult, setAnalysisResult] = useState<SentimentAnalysisResult | null>(null);
   const [summaryResult, setSummaryResult] = useState<SentimentSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTerminal, setShowTerminal] = useState(false);
+
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const fetchData = async () => {
   if (!symbol.trim()) {
@@ -450,6 +469,11 @@ return (
         )}
       </div>
     </div>
+    
+    <TerminalInterface 
+      isVisible={showTerminal}
+      onClose={() => setShowTerminal(false)}
+    />
   </main>
 );
 }

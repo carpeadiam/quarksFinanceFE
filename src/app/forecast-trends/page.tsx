@@ -6,6 +6,7 @@ import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 import { Badge } from '@/src/components/ui/badge';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
+import { TerminalInterface } from '@/src/components/ui';
 
 // Type definitions
 type StockData = {
@@ -32,6 +33,7 @@ export default function ForecastTrendsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showTerminal, setShowTerminal] = useState(false);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -561,8 +563,13 @@ export default function ForecastTrendsPage() {
 <div className="mt-4 text-sm text-gray-500">
   Showing {filteredAndSortedStocks.length} stocks
 </div>
-      </div>
-    </div>
+      </div> {/* Closing the w-full div */}
+      </div> {/* Closing the container div */}
+      
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </main>
   );
 }

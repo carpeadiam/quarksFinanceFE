@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import AlgorithmCard from './AlgorithmCard';
 import CreateAlgorithmModal from './CreateAlgorithmModal';
+import { TerminalInterface } from '../../components/ui';
 
 interface Algorithm {
   id: string;
@@ -65,6 +66,24 @@ const CustomAlgorithmsPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  const [showTerminal, setShowTerminal] = useState<boolean>(false);
+
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('quarksFinanceToken');
@@ -271,6 +290,11 @@ const CustomAlgorithmsPage: React.FC = () => {
           templates={templates}
         />
       )}
+      
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </div>
   );
 };

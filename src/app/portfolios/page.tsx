@@ -5,6 +5,7 @@ import PortfolioCreate from "./PortfolioCreate";
 import PortfolioList from "./PortfolioList";
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
+import { TerminalInterface } from '../../components/ui';
 
 // Define interfaces based on API response structure
 interface Portfolio {
@@ -32,6 +33,7 @@ const PortfolioPage: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showTerminal, setShowTerminal] = useState<boolean>(false);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('quarksFinanceToken');
@@ -172,6 +174,23 @@ const PortfolioPage: React.FC = () => {
     fetchPortfolios(token);
   };
 
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   if (!isLoggedIn) {
     return null; // Will redirect in useEffect
   }
@@ -241,6 +260,10 @@ const PortfolioPage: React.FC = () => {
       )}
       </div>
       </div>
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </div>
   );
 };

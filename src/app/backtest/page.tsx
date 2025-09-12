@@ -7,6 +7,7 @@ import Link from 'next/link';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 import BacktestResultCard from '../../components/BacktestResultCard';
 import Image from 'next/image';
+import { TerminalInterface } from '../../components/ui';
 
 // Define types for strategy parameters
 type StrategyParams = {
@@ -87,6 +88,7 @@ export default function BacktestPage() {
   const [backtestResult, setBacktestResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showTerminal, setShowTerminal] = useState(false);
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -166,6 +168,23 @@ useEffect(() => {
   });
   setParams(initialParams);
 }, [formData.strategy_type]);
+
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   return (
     <main className="min-h-screen bg-white">
@@ -369,8 +388,13 @@ useEffect(() => {
               result={backtestResult} 
               strategyType={formData.strategy_type}
             />}
-        </div>
-      </div>
+        </div> {/* This closes the div with className="container mx-auto px-4 md:px-40 py-8" */}
+      </div> {/* This closes the div with className="w-full px-4 mt-4" */}
+      
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </main>
   );
 }

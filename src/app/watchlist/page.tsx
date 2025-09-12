@@ -1,8 +1,30 @@
-// src/app/watchlist/page.tsx
+"use client";
 import Navbar from '../../components/navigation/Navbar';
 import Watchlist from '../../components/dashboard/Watchlist';
 import Link from 'next/link';
+import { TerminalInterface } from '../../components/ui';
+import { useState, useEffect } from 'react';
+
 export default function WatchlistPage() {
+  const [showTerminal, setShowTerminal] = useState(false);
+  
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
@@ -14,6 +36,10 @@ export default function WatchlistPage() {
       <div className="container mx-auto px-4 md:px-40 py-8">
         <Watchlist />
       </div>
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </main>
   );
 }

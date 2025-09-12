@@ -7,6 +7,7 @@ import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import { TerminalInterface } from '../../../components/ui';
 
 // API functions inlined
 const API_URL = 'https://thecodeworks.in/quarksfinance/api';
@@ -54,6 +55,24 @@ const IndicatorsPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showTerminal, setShowTerminal] = useState<boolean>(false);
+
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('quarksFinanceToken');
@@ -323,6 +342,11 @@ const IndicatorsPage: React.FC = () => {
           )}
         </div>
       </div>
+      
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </div>
   );
 };

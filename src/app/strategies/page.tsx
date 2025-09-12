@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../components/navigation/Navbar';
+import { TerminalInterface } from '../../components/ui';
 
 type Strategy = {
   id: number;
@@ -41,13 +42,14 @@ const LiveStrategiesPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
-const [newStrategy, setNewStrategy] = useState({
-  portfolio_id: '',
-  name: '',
-  symbol: '',
-  strategy_type: 'BOLLINGER',
-  parameters: {} as {[key: string]: number} // Initialize as empty object
-});
+  const [showTerminal, setShowTerminal] = useState<boolean>(false);
+  const [newStrategy, setNewStrategy] = useState({
+    portfolio_id: '',
+    name: '',
+    symbol: '',
+    strategy_type: 'BOLLINGER',
+    parameters: {} as {[key: string]: number} // Initialize as empty object
+  });
   const [strategyStates, setStrategyStates] = useState<{[key: number]: {isActive: boolean, signal: string}}>({});
 
 const [showParams, setShowParams] = useState(false);
@@ -134,6 +136,23 @@ const strategyParameters: StrategyParams = {
     }
   }, [router]);
   
+  // Add keyboard event listener for terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Shift+T (terminal)
+      if (e.shiftKey && e.key === 'T') {
+        e.preventDefault();
+        setShowTerminal(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Removed auto-refresh functionality
 
   // Filter strategies when portfolio selection changes
@@ -886,6 +905,8 @@ const getStrategyTypeDisplayName = (type: string) => {
           )}
         </div>
       </main>
+      </div> {/* This closes the w-full div */}
+      </div> {/* This closes the container div */}
       
       {/* Notifications */}
       {errorMessage && (
@@ -899,8 +920,11 @@ const getStrategyTypeDisplayName = (type: string) => {
           {successMessage}
         </div>
       )}
-    </div>
-    </div>
+      
+      <TerminalInterface 
+        isVisible={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
     </div>
   );
 };
