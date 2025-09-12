@@ -106,7 +106,7 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Using in-memory storage instead of localStorage
-      const storedToken = 'dummy_token'; // Replace with actual token retrieval logic
+      const storedToken = 'quarksFinanceToken'; // Replace with actual token retrieval logic
       setToken(storedToken);
     }
   }, []);
