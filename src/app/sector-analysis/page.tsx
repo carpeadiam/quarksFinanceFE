@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
+import TerminalManager from '../../components/ui/TerminalManager';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '@/src/components/ui/badge';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
@@ -282,7 +283,7 @@ export default function SectorAnalysisPage() {
       </div>
       </div>
       
-      <TerminalInterface 
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

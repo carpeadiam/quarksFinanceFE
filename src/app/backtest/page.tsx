@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
+import TerminalManager from '../../components/ui/TerminalManager';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 import BacktestResultCard from '../../components/BacktestResultCard';
 import Image from 'next/image';
@@ -391,7 +392,7 @@ useEffect(() => {
         </div> {/* This closes the div with className="container mx-auto px-4 md:px-40 py-8" */}
       </div> {/* This closes the div with className="w-full px-4 mt-4" */}
       
-      <TerminalInterface 
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

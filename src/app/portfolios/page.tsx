@@ -5,7 +5,7 @@ import PortfolioCreate from "./PortfolioCreate";
 import PortfolioList from "./PortfolioList";
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
-import { TerminalInterface } from '../../components/ui';
+import TerminalManager from '../../components/ui/TerminalManager';
 
 // Define interfaces based on API response structure
 interface Portfolio {
@@ -260,7 +260,9 @@ const PortfolioPage: React.FC = () => {
       )}
       </div>
       </div>
-      <TerminalInterface 
+      
+      {/* Terminal Manager */}
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

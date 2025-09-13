@@ -1,9 +1,9 @@
 "use client";
 import Navbar from '../../components/navigation/Navbar';
-import Watchlist from '../../components/dashboard/Watchlist';
 import Link from 'next/link';
-import { TerminalInterface } from '../../components/ui';
+import TerminalManager from '../../components/ui/TerminalManager';
 import { useState, useEffect } from 'react';
+import Watchlist from '../../components/dashboard/Watchlist';
 
 export default function WatchlistPage() {
   const [showTerminal, setShowTerminal] = useState(false);
@@ -36,7 +36,7 @@ export default function WatchlistPage() {
       <div className="container mx-auto px-4 md:px-40 py-8">
         <Watchlist />
       </div>
-      <TerminalInterface 
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

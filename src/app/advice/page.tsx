@@ -6,6 +6,7 @@ import AdviceCard from '../../components/AdviceCard';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
+import TerminalManager from '../../components/ui/TerminalManager';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 import { TerminalInterface } from '@/src/components/ui';
 
@@ -629,7 +630,7 @@ currentY = drawStrategy(
       </div>
     </div>
     
-    <TerminalInterface 
+    <TerminalManager 
       isVisible={showTerminal}
       onClose={() => setShowTerminal(false)}
     />

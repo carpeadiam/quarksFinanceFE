@@ -6,6 +6,7 @@ import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 import { Badge } from '@/src/components/ui/badge';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
+import TerminalManager from '../../components/ui/TerminalManager';
 import { TerminalInterface } from '@/src/components/ui';
 
 // Type definitions
@@ -566,7 +567,7 @@ export default function ForecastTrendsPage() {
       </div> {/* Closing the w-full div */}
       </div> {/* Closing the container div */}
       
-      <TerminalInterface 
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

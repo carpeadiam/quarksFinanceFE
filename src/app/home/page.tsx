@@ -5,7 +5,7 @@ import FeatureGrid from '../../components/dashboard/FeatureGrid';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
 import AudioPlayer from '../../components/ui/AudioPlayer';
-import { TerminalInterface } from '../../components/ui';
+import TerminalManager from '../../components/ui/TerminalManager';
 
 export default function Home() {
   const [showAudioPlayer, setShowAudioPlayer] = useState(false);
@@ -74,7 +74,7 @@ export default function Home() {
         />
       )}
       
-      <TerminalInterface 
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

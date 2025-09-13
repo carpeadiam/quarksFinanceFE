@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../../components/navigation/Navbar';
 import Link from 'next/link';
+import TerminalManager from '../../components/ui/TerminalManager';
 import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 import { TerminalInterface } from '../../components/ui';
 
@@ -470,7 +471,7 @@ return (
       </div>
     </div>
     
-    <TerminalInterface 
+    <TerminalManager 
       isVisible={showTerminal}
       onClose={() => setShowTerminal(false)}
     />

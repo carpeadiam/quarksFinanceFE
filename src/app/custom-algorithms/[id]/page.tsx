@@ -7,7 +7,7 @@ import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { TerminalInterface } from '../../../components/ui';
+import TerminalManager from '../../../components/ui/TerminalManager';
 
 const API_URL = 'https://thecodeworks.in/quarksfinance/api';
 
@@ -443,7 +443,7 @@ const AlgorithmDetailPage: React.FC = () => {
         </div>
       </div>
       
-      <TerminalInterface 
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

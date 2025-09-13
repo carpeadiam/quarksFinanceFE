@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../components/navigation/Navbar';
-import { TerminalInterface } from '../../components/ui';
+import TerminalManager from '../../components/ui/TerminalManager';
 
 type Strategy = {
   id: number;
@@ -921,7 +921,7 @@ const getStrategyTypeDisplayName = (type: string) => {
         </div>
       )}
       
-      <TerminalInterface 
+      <TerminalManager 
         isVisible={showTerminal}
         onClose={() => setShowTerminal(false)}
       />

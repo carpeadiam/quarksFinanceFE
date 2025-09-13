@@ -9,7 +9,13 @@ interface TerminalOutput {
   timestamp: Date;
 }
 
-function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
+interface TerminalInterfaceProps {
+  isVisible: boolean;
+  onClose: () => void;
+  isManaged?: boolean;
+}
+
+function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceProps) {
   const [command, setCommand] = useState('');
   const [output, setOutput] = useState<TerminalOutput[]>([
     {
@@ -187,8 +193,10 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
     }
   }, [isVisible, isMinimized]);
 
-  // Handle keyboard shortcuts
+  // Handle keyboard shortcuts (only when not managed)
   useEffect(() => {
+    if (isManaged) return;
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.shiftKey && e.key === 'T') {
         e.preventDefault();
@@ -204,7 +212,7 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
       }
 
       // Ctrl + L to clear terminal
-      if (e.ctrlKey && e.key === 'l' && isVisible) {
+      if (e.ctrlKey && e.key === 'm' && isVisible) {
         e.preventDefault();
         handleLocalCommand('clear');
       }
@@ -212,7 +220,7 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isVisible, isMinimized, onClose]);
+  }, [isVisible, isMinimized, onClose, isManaged]);
 
   // Scroll to bottom when output changes
   useEffect(() => {
@@ -221,8 +229,10 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
     }
   }, [output, isMinimized]);
 
-  // Handle resizing
+  // Handle resizing (only when not managed)
   useEffect(() => {
+    if (isManaged) return;
+    
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
       
@@ -245,7 +255,7 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isResizing]);
+  }, [isResizing, isManaged]);
 
   const addOutput = (content: string, type: TerminalOutput['type'] = 'output') => {
     const newOutput: TerminalOutput = {
@@ -381,7 +391,8 @@ function TerminalInterface({ isVisible, onClose }: { isVisible: boolean; onClose
 
   const handleLoadPortfolio = async (cmd: string): Promise<boolean> => {
     // Extract ID from command like "LOAD PORTFOLIO id=96"
-    const match = cmd.match(/id=([^\s]+)/i);
+    // More robust regex to handle various formats
+    const match = cmd.match(/id\s*=\s*([^\s]+)/i);
     if (!match) {
       addOutput('Error: Missing portfolio ID. Use: LOAD PORTFOLIO id=<id>', 'error');
       return false;
@@ -468,8 +479,10 @@ Local Commands:
   TIMESTAMP              - Toggle timestamp display
   STATUS                 - Show terminal status
   RESET                  - Reset terminal to defaults
+  RETURN ORIGIN          - Return to base QuarkScript prompt
   
 Accessibility:
+  Ctrl+C                 - Return to base QuarkScript prompt
   Ctrl+L                 - Clear terminal
   Shift+T                - Toggle terminal
   Escape                 - Minimize terminal
@@ -556,6 +569,15 @@ Remote Commands:
         addOutput('Terminal reset to default settings.', 'success');
         return true;
         
+      case 'return':
+        if (parts[1] === 'origin') {
+          setCurrentPortfolioId(null);
+          setContinuationMode(null);
+          addOutput('Returned to base QuarkScript prompt.', 'success');
+          return true;
+        }
+        return false;
+        
       default:
         return false;
     }
@@ -628,24 +650,33 @@ Remote Commands:
       if (!cmd) continue;
       
       // Add command to output
-      addOutput(`${getPromptText()} ${cmd}`, 'command');
+      addOutput(`QuarkScript> ${cmd}`, 'command');
       
       // Check if it's a local command
       if (handleLocalCommand(cmd)) {
         continue;
       }
       
-      // Check if it's a load command and needs continuation (only for single commands, not in multi-command)
-      if (isLoadCommand(cmd) && i === commands.length - 1 && commands.length === 1) {
-        // This is the last command and it's a load command, and it's the only command
-        const loadType = cmd.toUpperCase().includes('PORTFOLIO') ? 'PORTFOLIO' : 'WATCHLIST';
-        setContinuationMode({
-          command: cmd,
-          prompt: `${cmd} id=<id> >`
-        });
-        addOutput(`${cmd} id=<id> >`, 'info');
-        setLoading(false);
-        return;
+      // Check if it's a load command and needs continuation
+      if (isLoadCommand(cmd) && i === commands.length - 1) {
+        // Check if ID is already provided in the command with a more robust approach
+        const upperCmd = cmd.toUpperCase();
+        // Extract the ID parameter more carefully
+        const idMatch = cmd.match(/id\s*=\s*([^\s]+)/i);
+        const hasId = !!idMatch && idMatch[1].trim() !== '';
+        
+        // Only enter continuation mode if no ID is provided
+        if (!hasId) {
+          const loadType = upperCmd.includes('PORTFOLIO') ? 'PORTFOLIO' : 'WATCHLIST';
+          setContinuationMode({
+            command: cmd,
+            prompt: `${cmd} id=`
+          });
+          addOutput(`${cmd} id=`, 'info');
+          setLoading(false);
+          return;
+        }
+        // If ID is provided, execute the command directly
       }
       
       // Execute remote command
@@ -664,8 +695,9 @@ Remote Commands:
     
     // Handle continuation mode
     if (continuationMode) {
-      const fullCommand = `${continuationMode.command} ${command}`;
-      addOutput(`${continuationMode.prompt.replace('<id>', command)}`, 'command');
+      // For continuation mode, we just append the ID to the original command
+      const fullCommand = `${continuationMode.command} id=${command}`;
+      addOutput(`${continuationMode.prompt}${command}`, 'command');
       setContinuationMode(null);
       setLoading(true);
       await executeRemoteCommand(fullCommand);
@@ -702,6 +734,27 @@ Remote Commands:
       executeCommand();
     }
 
+    // Handle Ctrl+C to return to QuarkScript prompt (instead of cancelling)
+    if (e.ctrlKey && e.key === 'c') {
+      e.preventDefault();
+      if (continuationMode) {
+        setContinuationMode(null);
+        addOutput('^C', 'info');
+        setCommand('');
+      } else {
+        // If in portfolio context, return to base prompt
+        if (currentPortfolioId) {
+          setCurrentPortfolioId(null);
+          addOutput('^C', 'info');
+          setCommand('');
+        } else {
+          // Just add ^C to output and return to prompt
+          addOutput('^C', 'info');
+          setCommand('');
+        }
+      }
+    }
+
     if (e.key === 'Tab') {
       e.preventDefault();
       // Enhanced autocomplete with remote commands
@@ -732,6 +785,7 @@ Remote Commands:
       e.stopPropagation();
       setContinuationMode(null);
       addOutput('Continuation mode cancelled.', 'info');
+      setCommand('');
     }
   };
 
@@ -764,13 +818,76 @@ Remote Commands:
       return continuationMode.prompt;
     }
     if (currentPortfolioId) {
-      return `PORTFOLIO id=${currentPortfolioId}>`;
+      return `PORTFOLIO(${currentPortfolioId})>`;
     }
     return 'QuarkScript>';
   };
 
   if (!isVisible) return null;
 
+  // When managed, we only render the terminal content without headers or resize handles
+  if (isManaged) {
+    return (
+      <div className={`h-full ${currentTheme.bg} font-mono`}>
+        {/* Terminal Content Only */}
+        <div 
+          ref={terminalRef}
+          className={`p-4 h-[calc(100%-2.5rem)] overflow-y-auto ${currentTheme.bg}`}
+          style={{ fontSize: `${fontSize}px` }}
+          role="log"
+          aria-live="polite"
+          aria-label="Terminal output"
+        >
+          {output.map((item) => (
+            <div 
+              key={item.id} 
+              className={`mb-1 ${getOutputColor(item.type)} whitespace-pre-wrap`}
+              role="log"
+              tabIndex={0}
+              aria-label={`Terminal output: ${item.type}`}
+            >
+              {showTimestamps && (
+                <span className={`${theme === 'white' || theme === 'light' ? 'text-gray-400' : 'text-gray-500'} text-xs mr-2`}>
+                  [{formatTimestamp(item.timestamp)}]
+                </span>
+              )}
+              <div className="font-mono">
+                {item.content}
+              </div>
+            </div>
+          ))}
+          
+          {loading && (
+            <div className={`flex items-center gap-2 ${currentTheme.accent}`} role="status" aria-live="polite">
+              <div className="animate-pulse">Executing command...</div>
+              <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
+            </div>
+          )}
+          
+          <div className="flex items-center mt-2">
+            <span className={`${currentTheme.accent} mr-2`}>{getPromptText()}</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`flex-grow bg-transparent outline-none ${currentTheme.primary}`}
+              style={{ fontSize: `${fontSize}px` }}
+              autoFocus
+              disabled={loading}
+              aria-label="Terminal command input"
+              autoComplete="off"
+              spellCheck="false"
+              placeholder={continuationMode ? "Enter ID..." : ""}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Standalone mode - full terminal with headers and resize handles
   return (
     <div 
       className={`fixed bottom-0 left-0 right-0 z-50 ${currentTheme.border} border-t shadow-2xl ${isMinimized ? 'h-10' : ''}`}
