@@ -54,6 +54,12 @@ export default function FeatureGrid() {
       icon: '/images/sentiment_analysis.svg',
       href: '/sentiment',
       color: 'purple' as const,
+    },
+    {
+      title: 'Custom Algorithms',
+      icon: '/images/CustomAlgo.png',
+      href: '/sentiment',
+      color: 'purple' as const,
     }
   ];
 

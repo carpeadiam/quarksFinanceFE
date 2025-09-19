@@ -190,11 +190,11 @@ const CustomAlgorithmsPage: React.FC = () => {
                 Build, test, and optimize your own algorithmic trading strategies
               </p>
             </div>
-            <div className="absolute left-172 w-full h-full">
+            <div className="relative ml-8">
               <img 
-                src="/images/algorithms.svg" 
+                src="/images/custominside.png" 
                 alt="Custom algorithms illustration" 
-                className="scale-148"
+                className="w-48 h-auto object-contain scale-450"
               />
             </div>
           </div>
