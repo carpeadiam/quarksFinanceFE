@@ -58,7 +58,7 @@ export default function FeatureGrid() {
     {
       title: 'Custom Algorithms',
       icon: '/images/CustomAlgo.png',
-      href: '/sentiment',
+      href: '/custom-algorithms',
       color: 'purple' as const,
     }
   ];
