@@ -38,6 +38,8 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
   const [showTimestamps, setShowTimestamps] = useState(false);
   const [continuationMode, setContinuationMode] = useState<{ command: string; prompt: string } | null>(null);
   const [currentPortfolioId, setCurrentPortfolioId] = useState<string | null>(null);
+  const [autocompleteSuggestion, setAutocompleteSuggestion] = useState<string>('');
+  const [isFocused, setIsFocused] = useState(true);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -153,19 +155,21 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
     return matrix[str2.length][str1.length];
   };
 
-  const getSuggestedCommands = (input: string, maxSuggestions: number = 3): string[] => {
-    const localCommands = ['help', 'clear', 'cls', 'history', 'theme', 'fontsize', 'timestamp', 'status', 'reset', 'help remote'];
+  // Enhanced command suggestions - alphabetical order
+  const getSuggestedCommands = (input: string, maxSuggestions: number = 5): string[] => {
+    const localCommands = [
+      'alias', 'clear', 'cls', 'date', 'echo', 'help', 'help remote', 'history', 
+      'ls', 'ps', 'pwd', 'reset', 'return origin', 'status', 'theme', 'fontsize', 
+      'timestamp', 'whoami'
+    ];
     const allCommands = [...localCommands, ...remoteCommands.map(cmd => cmd.toLowerCase())];
     
+    if (input.length < 3) return [];
+    
     const suggestions = allCommands
-      .map(cmd => ({
-        command: cmd,
-        distance: getLevenshteinDistance(input.toLowerCase().trim(), cmd)
-      }))
-      .filter(item => item.distance <= Math.max(2, Math.floor(input.length / 3)))
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, maxSuggestions)
-      .map(item => item.command);
+      .filter(cmd => cmd.toLowerCase().startsWith(input.toLowerCase().trim()))
+      .sort() // Alphabetical order
+      .slice(0, maxSuggestions);
       
     return suggestions;
   };
@@ -190,6 +194,7 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
   useEffect(() => {
     if (isVisible && inputRef.current && !isMinimized) {
       inputRef.current.focus();
+      setIsFocused(true);
     }
   }, [isVisible, isMinimized]);
 
@@ -212,9 +217,15 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
       }
 
       // Ctrl + L to clear terminal
-      if (e.ctrlKey && e.key === 'm' && isVisible) {
+      if (e.ctrlKey && e.key === 'l' && isVisible) {
         e.preventDefault();
         handleLocalCommand('clear');
+      }
+      
+      // Ctrl + Shift + C to copy selected text
+      if (e.ctrlKey && e.shiftKey && e.key === 'C' && isVisible) {
+        e.preventDefault();
+        document.execCommand('copy');
       }
     };
 
@@ -433,6 +444,7 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
   const handleLocalCommand = (cmd: string): boolean => {
     const parts = cmd.trim().toLowerCase().split(' ');
     const baseCmd = parts[0];
+    const fullCmd = cmd.trim().toLowerCase();
     
     switch (baseCmd) {
       case 'help':
@@ -480,13 +492,22 @@ Local Commands:
   STATUS                 - Show terminal status
   RESET                  - Reset terminal to defaults
   RETURN ORIGIN          - Return to base QuarkScript prompt
+  ALIAS <name> <command> - Create command alias
+  ECHO <text>            - Display text
+  DATE                   - Show current date/time
+  WHOAMI                 - Show current user
+  PWD                    - Show current directory
+  LS                     - List directory contents
+  PS                     - Show running processes
   
 Accessibility:
   Ctrl+C                 - Return to base QuarkScript prompt
   Ctrl+L                 - Clear terminal
+  Ctrl+Shift+C           - Copy selected text
   Shift+T                - Toggle terminal
   Escape                 - Minimize terminal
   Arrow Up/Down          - Navigate command history
+  Tab                    - Auto-complete commands
   
 Multi-Command Support:
   Use semicolons (;) to execute multiple commands in one line
@@ -556,7 +577,8 @@ Remote Commands:
   Output Lines: ${output.length}
   Command History: ${commandHistory.length}
   Continuation Mode: ${continuationMode ? 'active' : 'inactive'}
-  Current Portfolio: ${currentPortfolioId || 'none'}`, 'info');
+  Current Portfolio: ${currentPortfolioId || 'none'}
+  Focus State: ${isFocused ? 'focused' : 'blurred'}`, 'info');
         return true;
         
       case 'reset':
@@ -577,6 +599,35 @@ Remote Commands:
           return true;
         }
         return false;
+        
+      case 'alias':
+        addOutput('Alias management not yet implemented.', 'info');
+        return true;
+        
+      case 'echo':
+        const text = cmd.substring(5); // Remove 'echo ' from command
+        addOutput(text, 'output');
+        return true;
+        
+      case 'date':
+        addOutput(new Date().toString(), 'output');
+        return true;
+        
+      case 'whoami':
+        addOutput(token ? 'Authenticated User' : 'Guest User', 'output');
+        return true;
+        
+      case 'pwd':
+        addOutput('/quarks/terminal', 'output');
+        return true;
+        
+      case 'ls':
+        addOutput('portfolio-1.json  strategy-2.json  watchlist-3.json', 'output');
+        return true;
+        
+      case 'ps':
+        addOutput('quarks-terminal  quarks-engine  quarks-api', 'output');
+        return true;
         
       default:
         return false;
@@ -728,10 +779,12 @@ Remote Commands:
 
       setHistoryIndex(newIndex);
       setCommand(newIndex === -1 ? '' : commandHistory[commandHistory.length - 1 - newIndex]);
+      setAutocompleteSuggestion(''); // Clear suggestion when navigating history
     }
     
     if (e.key === 'Enter') {
       executeCommand();
+      setAutocompleteSuggestion(''); // Clear suggestion after execution
     }
 
     // Handle Ctrl+C to return to QuarkScript prompt (instead of cancelling)
@@ -753,39 +806,34 @@ Remote Commands:
           setCommand('');
         }
       }
+      setAutocompleteSuggestion(''); // Clear suggestion
     }
 
     if (e.key === 'Tab') {
       e.preventDefault();
-      // Enhanced autocomplete with remote commands
-      const allCommands = [
-        'help', 'help remote', 'clear', 'cls', 'history', 'theme', 'fontsize', 
-        'timestamp', 'status', 'reset', ...remoteCommands
-      ];
-      const matches = allCommands.filter(cmd => 
-        cmd.toLowerCase().startsWith(command.toLowerCase().trim())
-      );
-      
-      if (matches.length === 1) {
-        setCommand(matches[0]);
-      } else if (matches.length > 1) {
-        // Show available completions
-        addOutput(`Available completions: ${matches.slice(0, 8).join(', ')}${matches.length > 8 ? '...' : ''}`, 'info');
+      // Tab completion - only when there's a suggestion
+      if (autocompleteSuggestion && command) {
+        const fullSuggestion = autocompleteSuggestion;
+        setCommand(fullSuggestion);
+        setAutocompleteSuggestion('');
       } else {
-        // Show suggestions for similar commands
+        // Generate new suggestions if none exist
         const suggestions = getSuggestedCommands(command);
         if (suggestions.length > 0) {
-          addOutput(`Similar commands: ${suggestions.join(', ')}`, 'info');
+          setAutocompleteSuggestion(suggestions[0]);
         }
       }
     }
 
-    // Escape key cancels continuation mode
-    if (e.key === 'Escape' && continuationMode) {
-      e.stopPropagation();
-      setContinuationMode(null);
-      addOutput('Continuation mode cancelled.', 'info');
-      setCommand('');
+    // Escape key cancels continuation mode or suggestions
+    if (e.key === 'Escape') {
+      if (continuationMode) {
+        e.stopPropagation();
+        setContinuationMode(null);
+        addOutput('Continuation mode cancelled.', 'info');
+        setCommand('');
+      }
+      setAutocompleteSuggestion(''); // Clear suggestion
     }
   };
 
@@ -828,7 +876,7 @@ Remote Commands:
   // When managed, we only render the terminal content without headers or resize handles
   if (isManaged) {
     return (
-      <div className={`h-full ${currentTheme.bg} font-mono`}>
+      <div className={`h-full ${currentTheme.bg} font-mono relative`}>
         {/* Terminal Content Only */}
         <div 
           ref={terminalRef}
@@ -837,6 +885,8 @@ Remote Commands:
           role="log"
           aria-live="polite"
           aria-label="Terminal output"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         >
           {output.map((item) => (
             <div 
@@ -864,23 +914,42 @@ Remote Commands:
             </div>
           )}
           
-          <div className="flex items-center mt-2">
+          <div className="flex items-center mt-2 relative">
             <span className={`${currentTheme.accent} mr-2`}>{getPromptText()}</span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className={`flex-grow bg-transparent outline-none ${currentTheme.primary}`}
-              style={{ fontSize: `${fontSize}px` }}
-              autoFocus
-              disabled={loading}
-              aria-label="Terminal command input"
-              autoComplete="off"
-              spellCheck="false"
-              placeholder={continuationMode ? "Enter ID..." : ""}
-            />
+            <div className="relative flex-grow">
+              <input
+                ref={inputRef}
+                type="text"
+                value={command}
+                onChange={(e) => {
+                  setCommand(e.target.value);
+                  // Update suggestions as user types (only if 3+ chars)
+                  if (e.target.value.trim().length >= 3) {
+                    const suggestions = getSuggestedCommands(e.target.value);
+                    setAutocompleteSuggestion(suggestions.length > 0 ? suggestions[0] : '');
+                  } else {
+                    setAutocompleteSuggestion('');
+                  }
+                }}
+                onKeyDown={handleKeyDown}
+                className={`bg-transparent outline-none ${currentTheme.primary} font-mono w-full`}
+                style={{ fontSize: `${fontSize}px` }}
+                autoFocus
+                disabled={loading}
+                aria-label="Terminal command input"
+                autoComplete="off"
+                spellCheck="false"
+                placeholder={continuationMode ? "Enter ID..." : ""}
+              />
+              {/* Autocomplete ghost text */}
+              {autocompleteSuggestion && command && (
+                <div className={`absolute inset-0 pointer-events-none ${currentTheme.primary} font-mono`} 
+                     style={{ fontSize: `${fontSize}px`, opacity: 0.5, zIndex: 10 }}>
+                    <span className="invisible">{command}</span>
+                    <span>{autocompleteSuggestion.substring(command.length)}</span>
+                  </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -953,6 +1022,8 @@ Remote Commands:
             role="log"
             aria-live="polite"
             aria-label="Terminal output"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
           >
             {output.map((item) => (
               <div 
@@ -980,23 +1051,42 @@ Remote Commands:
               </div>
             )}
             
-            <div className="flex items-center mt-2">
+            <div className="flex items-center mt-2 relative">
               <span className={`${currentTheme.accent} mr-2`}>{getPromptText()}</span>
-              <input
-                ref={inputRef}
-                type="text"
-                value={command}
-                onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className={`flex-grow bg-transparent outline-none ${currentTheme.primary}`}
-                style={{ fontSize: `${fontSize}px` }}
-                autoFocus
-                disabled={loading}
-                aria-label="Terminal command input"
-                autoComplete="off"
-                spellCheck="false"
-                placeholder={continuationMode ? "Enter ID..." : ""}
-              />
+              <div className="relative flex-grow">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={command}
+                  onChange={(e) => {
+                    setCommand(e.target.value);
+                    // Update suggestions as user types (only if 3+ chars)
+                    if (e.target.value.trim().length >= 3) {
+                      const suggestions = getSuggestedCommands(e.target.value);
+                      setAutocompleteSuggestion(suggestions.length > 0 ? suggestions[0] : '');
+                    } else {
+                      setAutocompleteSuggestion('');
+                    }
+                  }}
+                  onKeyDown={handleKeyDown}
+                  className={`bg-transparent outline-none ${currentTheme.primary} font-mono w-full`}
+                  style={{ fontSize: `${fontSize}px` }}
+                  autoFocus
+                  disabled={loading}
+                  aria-label="Terminal command input"
+                  autoComplete="off"
+                  spellCheck="false"
+                  placeholder={continuationMode ? "Enter ID..." : ""}
+                />
+                {/* Autocomplete ghost text */}
+                {autocompleteSuggestion && command && (
+                  <div className={`absolute inset-0 pointer-events-none ${currentTheme.primary} font-mono`} 
+                       style={{ fontSize: `${fontSize}px`, opacity: 0.5, zIndex: 10 }}>
+                    <span className="invisible">{command}</span>
+                    <span>{autocompleteSuggestion.substring(command.length)}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </>

@@ -17,9 +17,12 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
   const [editingTerminalId, setEditingTerminalId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [height, setHeight] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const terminalContentRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
 
   // Focus active terminal when terminals change
   useEffect(() => {
@@ -35,6 +38,50 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
       editInputRef.current.select();
     }
   }, [editingTerminalId]);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Shift+T to close terminal when it's visible
+      if (e.shiftKey && e.key === 'T' && isVisible) {
+        e.preventDefault();
+        // Close the terminal entirely when Shift+T is pressed while visible
+        closeManager();
+      }
+      
+      // Handle Escape key to minimize terminal
+      if (e.key === 'Escape' && isVisible && !isMinimized) {
+        e.preventDefault();
+        setIsMinimized(true);
+      }
+      
+      // Handle F11 for fullscreen toggle
+      if (e.key === 'F11' && isVisible && !isMinimized) {
+        e.preventDefault();
+        setIsFullscreen(!isFullscreen);
+      }
+    };
+
+    // Add event listener regardless of visibility to ensure consistent behavior
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isVisible, isMinimized, isFullscreen]);
+
+  // Handle scrolling when minimizing/restoring
+  useEffect(() => {
+    if (!terminalContentRef.current) return;
+
+    if (isMinimized) {
+      // Save scroll position when minimizing
+      scrollPositionRef.current = terminalContentRef.current.scrollTop;
+    } else {
+      // Restore scroll position when restoring
+      terminalContentRef.current.scrollTop = scrollPositionRef.current;
+    }
+  }, [isMinimized]);
 
   // Handle resizing
   useEffect(() => {
@@ -105,6 +152,8 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
     setTerminals([{ id: '1', name: 'Terminal 1', isActive: true }]);
     setNextId(2);
     setEditingTerminalId(null);
+    setIsMinimized(false); // Reset minimize state when closing
+    setIsFullscreen(false); // Reset fullscreen state when closing
     onClose();
   };
 
@@ -139,13 +188,12 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
   if (!isVisible) return null;
 
   return (
-    <div className={`fixed bottom-0 right-0 z-50 border-t border-l shadow-2xl bg-gray-900 border-gray-700 ${isMinimized ? 'h-10' : ''}`} 
+    <div className={`fixed bottom-0 left-0 z-50 border-t border-l shadow-2xl bg-gray-900 border-gray-700 ${isMinimized ? 'h-10' : ''} ${isFullscreen ? 'fixed inset-0 h-screen w-screen rounded-none' : 'right-0 rounded-tl-lg'}`} 
          style={{ 
-           width: '100%', 
-           height: isMinimized ? '2.5rem' : `${height}px` 
+           height: isMinimized ? '2.5rem' : (isFullscreen ? '100vh' : `${height}px`)
          }}>
       {/* Resize Handle */}
-      {!isMinimized && (
+      {!isMinimized && !isFullscreen && (
         <div
           className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-gray-600 transition-colors"
           onMouseDown={startResize}
@@ -214,6 +262,13 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
         </div>
         <div className="flex gap-2">
           <button 
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="text-gray-400 hover:text-white text-sm"
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? '❐' : '□'}
+          </button>
+          <button 
             onClick={() => setIsMinimized(!isMinimized)}
             className="text-gray-400 hover:text-white text-sm"
             aria-label={isMinimized ? "Restore terminal" : "Minimize terminal"}
@@ -232,7 +287,10 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
 
       {!isMinimized && (
         // Terminal Content */}
-        <div className="h-[calc(100%-3.5rem)]">
+        <div 
+          ref={terminalContentRef}
+          className="h-[calc(100%-3.5rem)] overflow-y-auto"
+        >
           {terminals.map(terminal => (
             <div 
               key={terminal.id} 

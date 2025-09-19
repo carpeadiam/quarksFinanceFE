@@ -9,16 +9,12 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu when clicking outside
+  // Close menu when clicking outside (desktop menu only)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
-      }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false);
       }
     }
 
@@ -34,6 +30,10 @@ export default function Navbar() {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -56,7 +56,7 @@ export default function Navbar() {
             <button
               onClick={toggleMobileMenu}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-              aria-label="Toggle mobile menu"
+              aria-label={isMobileMenuOpen ? "Close mobile menu" : "Open mobile menu"}
             >
               <svg 
                 width="24" 
@@ -146,35 +146,35 @@ export default function Navbar() {
       
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200 py-4 px-4" ref={mobileMenuRef}>
+        <div className="md:hidden bg-white border-t border-gray-200 py-4 px-4">
           <div className="flex flex-col gap-4">
             <AuthButtons />
             <div className="flex flex-col gap-3">
               <Link 
                 href="/nsedocs" 
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 rounded-lg"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
               >
                 NSE Symbols Guide
               </Link>
               <Link 
                 href="/terminaldocs" 
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 rounded-lg"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
               >
                 QuarkScript Docs
               </Link>
               <Link 
                 href="/integrations/discord" 
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 rounded-lg"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
               >
                 Discord Bot 
               </Link>
               <Link 
                 href="/about" 
                 className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors duration-150 rounded-lg"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
               >
                 About us
               </Link>
