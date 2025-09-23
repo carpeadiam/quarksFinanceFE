@@ -24,6 +24,17 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
   const terminalContentRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
 
+  // Move the closeManager function here, before it's used in useEffect
+  const closeManager = () => {
+    // Reset to single terminal when closing
+    setTerminals([{ id: '1', name: 'Terminal 1', isActive: true }]);
+    setNextId(2);
+    setEditingTerminalId(null);
+    setIsMinimized(false); // Reset minimize state when closing
+    setIsFullscreen(false); // Reset fullscreen state when closing
+    onClose();
+  };
+
   // Focus active terminal when terminals change
   useEffect(() => {
     if (terminals.length > 0 && !terminals.some(t => t.isActive)) {
@@ -68,7 +79,7 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isVisible, isMinimized, isFullscreen]);
+  }, [isVisible, isMinimized, isFullscreen, closeManager]);
 
   // Handle scrolling when minimizing/restoring
   useEffect(() => {
@@ -145,16 +156,6 @@ function TerminalManager({ isVisible, onClose }: { isVisible: boolean; onClose: 
       ...t,
       isActive: t.id === id
     })));
-  };
-
-  const closeManager = () => {
-    // Reset to single terminal when closing
-    setTerminals([{ id: '1', name: 'Terminal 1', isActive: true }]);
-    setNextId(2);
-    setEditingTerminalId(null);
-    setIsMinimized(false); // Reset minimize state when closing
-    setIsFullscreen(false); // Reset fullscreen state when closing
-    onClose();
   };
 
   const startEditing = (id: string, currentName: string) => {

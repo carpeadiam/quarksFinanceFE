@@ -7,6 +7,12 @@ interface TerminalOutput {
   type: 'command' | 'output' | 'error' | 'success' | 'info';
   content: string;
   timestamp: Date;
+  // Add metadata for collapsible JSON sections
+  jsonMetadata?: {
+    isJson: boolean;
+    collapsedSections: Record<string, boolean>;
+    filterSections?: string[];
+  };
 }
 
 interface TerminalInterfaceProps {
@@ -42,6 +48,7 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
   const [isFocused, setIsFocused] = useState(true);
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
   const themes = {
     green: { 
@@ -128,6 +135,12 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
     'STRATEGY DISABLE',
     'RUN STRATEGY',
     'GENERATE ADVICE',
+    'use_algo',
+    'create_algo',
+    'list_algos',
+    'get_algo',
+    'delete_algo',
+    'run_backtest',
     'EXIT'
   ];
 
@@ -268,12 +281,13 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
     };
   }, [isResizing, isManaged]);
 
-  const addOutput = (content: string, type: TerminalOutput['type'] = 'output') => {
+  const addOutput = (content: string, type: TerminalOutput['type'] = 'output', jsonMetadata?: TerminalOutput['jsonMetadata']) => {
     const newOutput: TerminalOutput = {
       id: Date.now().toString(),
       type,
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
+      jsonMetadata
     };
     
     setOutput(prev => {
@@ -286,10 +300,116 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
     });
   };
 
-  const formatData = (data: any, indent: number = 0): string => {
+  // Parse command for filter options
+  const parseCommandForFilters = (cmd: string): { command: string; filterSections: string[] } => {
+    const filterMatch = cmd.match(/--filterby:([^\s]+)/);
+    if (filterMatch) {
+      const filterSections = filterMatch[1].split(',').map(s => s.trim());
+      const cleanCommand = cmd.replace(/--filterby:[^\s]+/, '').trim();
+      return { command: cleanCommand, filterSections };
+    }
+    return { command: cmd.trim(), filterSections: [] };
+  };
+
+  // Toggle section collapse state
+  const toggleSectionCollapse = (sectionPath: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionPath]: !prev[sectionPath]
+    }));
+  };
+
+  // Collapsible JSON section component
+const CollapsibleJsonSection = ({ 
+  data, 
+  path = '', 
+  filterSections = [],
+  onToggle,
+  collapsedSections = {}
+}: { 
+  data: any; 
+  path?: string; 
+  filterSections?: string[];
+  onToggle: (sectionPath: string) => void;
+  collapsedSections: Record<string, boolean>;
+}) => {
+  if (typeof data !== 'object' || data === null) {
+    return <span>{JSON.stringify(data)}</span>;
+  }
+
+  const entries = Object.entries(data);
+  
+  // Apply filtering if filterSections is provided
+  const filteredEntries = filterSections && filterSections.length > 0 
+    ? entries.filter(([key]) => filterSections.includes(key)) 
+    : entries;
+
+  if (filteredEntries.length === 0) {
+    return <span>{"{}"}</span>;
+  }
+
+  return (
+    <div className="ml-4">
+      {"{"}
+      {filteredEntries.map(([key, value], index) => {
+        const itemPath = path ? `${path}.${key}` : key;
+        const isCollapsed = collapsedSections[itemPath];
+        const isObject = typeof value === 'object' && value !== null;
+        const isLast = index === filteredEntries.length - 1;
+        
+        return (
+          <div key={itemPath} className="mt-1">
+            <div className="flex items-start">
+              {isObject && (
+                <button 
+                  onClick={() => onToggle(itemPath)}
+                  className="mr-1 text-xs text-gray-400 hover:text-gray-200 focus:outline-none"
+                  aria-label={isCollapsed ? `Expand ${key}` : `Collapse ${key}`}
+                >
+                  {isCollapsed ? '▶' : '▼'}
+                </button>
+              )}
+              <span className="text-cyan-400">
+                {key}:
+              </span>
+              {isObject ? (
+                <div className="ml-2 flex-1">
+                  {isCollapsed ? (
+                    <span className="text-gray-400">
+                      {Array.isArray(value) ? `[...]` : `{...}`}
+                    </span>
+                  ) : (
+                    <CollapsibleJsonSection 
+                      data={value} 
+                      path={itemPath} 
+                      filterSections={filterSections}
+                      onToggle={onToggle}
+                      collapsedSections={collapsedSections}
+                    />
+                  )}
+                </div>
+              ) : (
+                <span className="ml-2 text-green-400">
+                  {JSON.stringify(value)}
+                  {!isLast && ','}
+                </span>
+              )}
+            </div>
+            {!isLast && !isCollapsed && <div className="text-gray-400">,</div>}
+          </div>
+        );
+      })}
+      {"}"}
+    </div>
+  );
+};
+
+  // Enhanced formatData function with collapsible sections and filtering
+  const formatData = (data: any, indent: number = 0, path: string = '', filterSections?: string[]): string => {
     const spaces = '  '.repeat(indent);
     const nextIndent = indent + 1;
     const nextSpaces = '  '.repeat(nextIndent);
+    const sectionPath = path;
     
     if (typeof data === 'string') return `"${data}"`;
     if (typeof data === 'number') return data.toString();
@@ -301,7 +421,8 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
       if (data.length === 0) return '[]';
       
       const formattedItems = data.map((item, index) => {
-        const formattedItem = formatData(item, nextIndent);
+        const itemPath = `${sectionPath}[${index}]`;
+        const formattedItem = formatData(item, nextIndent, itemPath, filterSections);
         return `${nextSpaces}[${index}] ${formattedItem}`;
       });
       
@@ -312,8 +433,16 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
       const entries = Object.entries(data);
       if (entries.length === 0) return '{}';
       
-      const formattedEntries = entries.map(([key, value]) => {
-        const formattedValue = formatData(value, nextIndent);
+      // Apply filtering if filterSections is provided
+      const filteredEntries = filterSections && filterSections.length > 0 
+        ? entries.filter(([key]) => filterSections.includes(key)) 
+        : entries;
+      
+      if (filteredEntries.length === 0) return '{}';
+      
+      const formattedEntries = filteredEntries.map(([key, value]) => {
+        const itemPath = path ? `${path}.${key}` : key;
+        const formattedValue = formatData(value, nextIndent, itemPath, filterSections);
         
         // Special formatting for different value types
         if (typeof value === 'object' && value !== null) {
@@ -446,7 +575,12 @@ function TerminalInterface({ isVisible, onClose, isManaged }: TerminalInterfaceP
     const baseCmd = parts[0];
     const fullCmd = cmd.trim().toLowerCase();
     
-    switch (baseCmd) {
+    // Parse command for filters
+    const { command: cleanCommand, filterSections } = parseCommandForFilters(cmd);
+    const cleanParts = cleanCommand.split(' ');
+    const cleanBaseCmd = cleanParts[0];
+    
+    switch (cleanBaseCmd) {
       case 'help':
         if (parts[1] === 'remote') {
           addOutput(`Available Commands:
@@ -470,6 +604,15 @@ Strategy Management:
   STRATEGY ENABLE id=<strategy_id>
   STRATEGY DISABLE id=<strategy_id>
   RUN STRATEGY name=<strategy_name> symbol=<symbol> [params...]
+Algorithm Management:
+  use_algo <type> [param1=value1] [param2=value2] ...
+    Available types: rsi, mean_reversion, momentum, volume_breakout, 
+                     quantum_momentum, alpha_convergence, volatility_breakout, smart_money_flow
+  create_algo <json_config>
+  list_algos
+  get_algo <id>
+  delete_algo <id>
+  run_backtest <id> [symbol=<symbol>] [start_date=<YYYY-MM-DD>] [end_date=<YYYY-MM-DD>] [initial_cash=<amount>]
 Analysis:
   GENERATE ADVICE symbol=<symbol>
 Other:
@@ -512,6 +655,20 @@ Accessibility:
 Multi-Command Support:
   Use semicolons (;) to execute multiple commands in one line
   Example: HELP; STATUS; CLEAR
+  
+Algorithm Commands:
+  use_algo <type> [param1=value1] [param2=value2] ...
+    Create algorithm from built-in templates
+  create_algo <json_config>
+    Create custom algorithm from JSON configuration
+  list_algos
+    List all your algorithms
+  get_algo <id>
+    Get details of a specific algorithm
+  delete_algo <id>
+    Delete an algorithm
+  run_backtest <id> [symbol=<symbol>] [start_date=<YYYY-MM-DD>] [end_date=<YYYY-MM-DD>] [initial_cash=<amount>]
+    Run a backtest on an algorithm
   
 Remote Commands:
   All other commands are sent to the QuarkScript server.`, 'info');
@@ -635,11 +792,14 @@ Remote Commands:
   };
 
   const executeRemoteCommand = async (cmd: string) => {
+    // Parse command for filters
+    const { command: cleanCommand, filterSections } = parseCommandForFilters(cmd);
+    
     // Handle special portfolio commands
-    const upperCmd = cmd.trim().toUpperCase();
+    const upperCmd = cleanCommand.trim().toUpperCase();
     
     if (upperCmd.startsWith('LOAD PORTFOLIO')) {
-      const success = await handleLoadPortfolio(cmd);
+      const success = await handleLoadPortfolio(cleanCommand);
       return success;
     }
     
@@ -661,21 +821,26 @@ Remote Commands:
           'Content-Type': 'application/json',
           'x-access-token': token,
         },
-        body: JSON.stringify({ command: cmd })
+        body: JSON.stringify({ command: cleanCommand })
       });
 
       const data = await response.json();
 
       if (response.ok && data) {
-        const formattedResult = formatData(data.result || data);
-        addOutput(formattedResult, 'output');
+        // Format data with filter support
+        const formattedResult = formatData(data.result || data, 0, '', filterSections);
+        addOutput(formattedResult, 'output', {
+          isJson: true,
+          collapsedSections: {},
+          filterSections
+        });
         return true;
       } else {
         const errorMsg = data.message || 'Something went wrong';
         addOutput(`Error: ${errorMsg}`, 'error');
         
         // Suggest similar commands if it might be a typo
-        const suggestions = getSuggestedCommands(cmd);
+        const suggestions = getSuggestedCommands(cleanCommand);
         if (suggestions.length > 0) {
           addOutput(`Did you mean: ${suggestions.join(', ')}?`, 'info');
         }
@@ -685,7 +850,7 @@ Remote Commands:
       addOutput('Error: Failed to connect to server. Check your connection.', 'error');
       
       // Still provide suggestions for potential command typos
-      const suggestions = getSuggestedCommands(cmd);
+      const suggestions = getSuggestedCommands(cleanCommand);
       if (suggestions.length > 0) {
         addOutput(`If this was a command typo, did you mean: ${suggestions.join(', ')}?`, 'info');
       }
@@ -1039,7 +1204,29 @@ Remote Commands:
                   </span>
                 )}
                 <div className="font-mono">
-                  {item.content}
+                  {/* Render collapsible JSON if metadata exists */}
+                  {item.jsonMetadata?.isJson ? (
+                    <div className="whitespace-pre-wrap">
+                      {(() => {
+                        try {
+                          const jsonData = JSON.parse(item.content);
+                          return (
+                            <CollapsibleJsonSection 
+                              data={jsonData} 
+                              filterSections={item.jsonMetadata.filterSections}
+                              onToggle={toggleSectionCollapse}
+                              collapsedSections={collapsedSections}
+                            />
+                          );
+                        } catch (e) {
+                          // Fallback to regular content if JSON parsing fails
+                          return item.content;
+                        }
+                      })()}
+                    </div>
+                  ) : (
+                    item.content
+                  )}
                 </div>
               </div>
             ))}
