@@ -5,9 +5,9 @@ import Link from 'next/link';
 
 type WatchlistSummary = {
   "Added On": string;
-  "Change": number;
-  "Current Price": number;
-  "Initial Price": number;
+  "Change": number | string;
+  "Current Price": number | string;
+  "Initial Price": number | string;
   "Symbol": string;
 };
 
@@ -276,10 +276,10 @@ const Watchlist: React.FC = () => {
                         <tr key={index} className="border-b">
                           <td className="p-3 border-r text-center" style={{ fontFamily: 'Rubik, sans-serif' }}>{item.Symbol}</td>
                           <td className="p-3 border-r text-center" style={{ fontFamily: 'Rubik, sans-serif' }}>{item["Added On"].split(' ')[0]}</td>
-                          <td className="p-3 border-r text-center" style={{ fontFamily: 'Rubik, sans-serif' }}>{item["Initial Price"].toFixed(2)}</td>
-                          <td className="p-3 border-r text-center" style={{ fontFamily: 'Rubik, sans-serif' }}>{item["Current Price"].toFixed(2)}</td>
-                          <td className={`p-3 text-center ${item.Change > 0 ? 'text-green-500' : item.Change < 0 ? 'text-red-500' : 'text-gray-500'}`} style={{ fontFamily: 'Rubik, sans-serif' }}>
-                            {item.Change > 0 ? `+${item.Change.toFixed(2)}` : item.Change.toFixed(2)}
+                          <td className="p-3 border-r text-center" style={{ fontFamily: 'Rubik, sans-serif' }}>{typeof item["Initial Price"] === 'number' ? item["Initial Price"].toFixed(2) : 'N/A'}</td>
+                          <td className="p-3 border-r text-center" style={{ fontFamily: 'Rubik, sans-serif' }}>{typeof item["Current Price"] === 'number' ? item["Current Price"].toFixed(2) : 'N/A'}</td>
+                          <td className={`p-3 text-center ${typeof item.Change === 'number' && item.Change > 0 ? 'text-green-500' : typeof item.Change === 'number' && item.Change < 0 ? 'text-red-500' : 'text-gray-500'}`} style={{ fontFamily: 'Rubik, sans-serif' }}>
+                            {typeof item.Change === 'number' ? (item.Change > 0 ? `+${item.Change.toFixed(2)}` : item.Change.toFixed(2)) : 'N/A'}
                           </td>
                         </tr>
                       ))

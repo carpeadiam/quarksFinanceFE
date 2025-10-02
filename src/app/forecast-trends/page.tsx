@@ -711,7 +711,7 @@ export default function ForecastTrendsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100" style={{ fontFamily: 'Rubik, sans-serif'}}>
+    <main className="min-h-screen bg-white" style={{ fontFamily: 'Rubik, sans-serif'}}>
       <Navbar />
 
       {/* Breadcrumb navigation */}
@@ -724,7 +724,7 @@ export default function ForecastTrendsPage() {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 py-8 max-w-full">
         <div className="w-full mt-4">
           {/* Header Section */}
-          <div className="flex items-center justify-between mb-24 bg-white rounded-2xl p-8 relative overflow-hidden border shadow-lg" style={{ minHeight: '100px' }}>
+          <div className="flex items-center justify-between mb-24 bg-white rounded-2xl p-8 relative overflow-hidden border " style={{ minHeight: '100px' }}>
             <div>
               <h1 className="text-4xl font-bold mb-3" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4C555A' }}>
                 Stock Recommendations
